@@ -154,7 +154,6 @@ def get_fitbit_daily_data(user):
     # データを整理して返す
     return parse_fitbit_data(data)
 
-# Route handlers
 @app.route('/')
 def index():
     """ホームページ - ログインチェック"""
