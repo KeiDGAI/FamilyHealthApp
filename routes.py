@@ -148,30 +148,86 @@ def parse_fitbit_data(raw_data):
     return parsed_data
 
 def get_fitbit_daily_data(user):
-    """本日のFitbitデータを取得（レート制限対応）"""
-    # レート制限を避けるため、一度に1つのエンドポイントのみ取得
-    today = datetime.now().strftime('%Y-%m-%d')
+    """本日のFitbitデータを取得（キャッシュ機能付き）"""
+    from models import FitbitData
     
-    # 最も重要なアクティビティデータのみ取得
-    endpoint = f'/1/user/-/activities/date/{today}.json'
+    today = datetime.now().date()
+    
+    # データベースからキャッシュされたデータを確認
+    cached_data = FitbitData.query.filter_by(
+        user_id=user.id,
+        date=today
+    ).first()
+    
+    # キャッシュが存在し、まだ有効な場合はそれを返す
+    if cached_data and not cached_data.is_cache_expired():
+        app.logger.info(f'Using cached Fitbit data for user {user.username} (cached at {cached_data.fetched_at})')
+        return cached_data.to_dict()
+    
+    # キャッシュが期限切れまたは存在しない場合、APIから取得
+    app.logger.info(f'Fetching fresh Fitbit data for user {user.username}')
+    
+    today_str = today.strftime('%Y-%m-%d')
+    endpoint = f'/1/user/-/activities/date/{today_str}.json'
     
     result = make_fitbit_api_request(user, endpoint)
+    
     if result:
-        data = {'activities': result}
-        return parse_fitbit_data(data)
+        # APIからデータを取得できた場合
+        parsed_data = parse_fitbit_data({'activities': result})
+        
+        # データベースに保存またはアップデート
+        if cached_data:
+            # 既存データを更新
+            cached_data.steps = parsed_data.get('steps', 0)
+            cached_data.calories_burned = parsed_data.get('calories_burned', 0)
+            cached_data.resting_heart_rate = parsed_data.get('resting_heart_rate')
+            cached_data.max_heart_rate = parsed_data.get('max_heart_rate')
+            cached_data.hrv = parsed_data.get('hrv')
+            cached_data.fetched_at = datetime.utcnow()
+        else:
+            # 新しいデータを作成
+            cached_data = FitbitData(
+                user_id=user.id,
+                date=today,
+                steps=parsed_data.get('steps', 0),
+                calories_burned=parsed_data.get('calories_burned', 0),
+                resting_heart_rate=parsed_data.get('resting_heart_rate'),
+                max_heart_rate=parsed_data.get('max_heart_rate'),
+                hrv=parsed_data.get('hrv'),
+                fetched_at=datetime.utcnow()
+            )
+            db.session.add(cached_data)
+        
+        try:
+            db.session.commit()
+            app.logger.info(f'Saved Fitbit data to cache for user {user.username}')
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f'Failed to save Fitbit data to cache: {e}')
+        
+        return parsed_data
+    
     else:
-        # APIが利用できない場合はデフォルト値を返す
+        # APIが利用できない場合、古いキャッシュがあればそれを返す
+        if cached_data:
+            app.logger.info(f'API unavailable, using expired cache for user {user.username}')
+            return cached_data.to_dict()
+        
+        # キャッシュもない場合はデフォルト値
         return {
             'steps': 0,
             'calories_burned': 0,
             'resting_heart_rate': None,
             'max_heart_rate': None,
             'hrv': None,
-            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M')
+            'last_updated': 'データなし'
         }
 
 def get_fitbit_weekly_data(user):
-    """過去7日間のFitbitデータを取得（効率化版）"""
+    """過去7日間のFitbitデータを取得（キャッシュ機能付き）"""
+    from models import FitbitData
+    
     weekly_data = {
         'dates': [],
         'steps': [],
@@ -181,26 +237,27 @@ def get_fitbit_weekly_data(user):
         'hrv': []
     }
     
-    # レート制限を避けるため、今日のデータのみ取得
-    today = datetime.now().strftime('%Y-%m-%d')
-    
-    # 今日のデータを取得
-    daily_data = get_fitbit_daily_data(user)
-    
-    # 7日分のデータを生成（今日以外はデフォルト値）
+    # 過去7日間のデータを取得
     for i in range(7):
-        date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
-        weekly_data['dates'].insert(0, date)
+        date_obj = datetime.now().date() - timedelta(days=i)
+        date_str = date_obj.strftime('%Y-%m-%d')
+        weekly_data['dates'].insert(0, date_str)
         
-        if date == today:
-            # 今日のデータを使用
-            weekly_data['steps'].insert(0, daily_data.get('steps', 0))
-            weekly_data['calories'].insert(0, daily_data.get('calories_burned', 0))
-            weekly_data['resting_hr'].insert(0, daily_data.get('resting_heart_rate', None))
-            weekly_data['max_hr'].insert(0, daily_data.get('max_heart_rate', None))
-            weekly_data['hrv'].insert(0, daily_data.get('hrv', None))
+        # データベースからキャッシュされたデータを取得
+        cached_data = FitbitData.query.filter_by(
+            user_id=user.id,
+            date=date_obj
+        ).first()
+        
+        if cached_data:
+            # キャッシュされたデータを使用
+            weekly_data['steps'].insert(0, cached_data.steps or 0)
+            weekly_data['calories'].insert(0, cached_data.calories_burned or 0)
+            weekly_data['resting_hr'].insert(0, cached_data.resting_heart_rate)
+            weekly_data['max_hr'].insert(0, cached_data.max_heart_rate)
+            weekly_data['hrv'].insert(0, cached_data.hrv)
         else:
-            # 過去のデータはデフォルト値（レート制限回避）
+            # キャッシュがない場合はデフォルト値
             weekly_data['steps'].insert(0, 0)
             weekly_data['calories'].insert(0, 0)
             weekly_data['resting_hr'].insert(0, None)

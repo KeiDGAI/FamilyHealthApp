@@ -76,3 +76,48 @@ class User(db.Model):
     
     def __repr__(self):
         return f'<User {self.username}>'
+
+class FitbitData(db.Model):
+    """Fitbitデータキャッシュモデル - APIレート制限対策"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    
+    # 健康データ
+    steps = db.Column(db.Integer, default=0)
+    calories_burned = db.Column(db.Integer, default=0)
+    resting_heart_rate = db.Column(db.Integer, nullable=True)
+    max_heart_rate = db.Column(db.Integer, nullable=True)
+    hrv = db.Column(db.Float, nullable=True)
+    
+    # キャッシュ管理
+    fetched_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # ユーザーとの関係
+    user = db.relationship('User', backref=db.backref('fitbit_data', lazy=True))
+    
+    # ユニーク制約（ユーザーと日付の組み合わせ）
+    __table_args__ = (db.UniqueConstraint('user_id', 'date', name='_user_date_uc'),)
+    
+    def is_cache_expired(self, cache_duration_minutes=30):
+        """キャッシュが期限切れかチェック"""
+        if not self.fetched_at:
+            return True
+        
+        from datetime import timedelta
+        expiry_time = self.fetched_at + timedelta(minutes=cache_duration_minutes)
+        return datetime.utcnow() > expiry_time
+    
+    def to_dict(self):
+        """辞書形式でデータを返す"""
+        return {
+            'steps': self.steps or 0,
+            'calories_burned': self.calories_burned or 0,
+            'resting_heart_rate': self.resting_heart_rate,
+            'max_heart_rate': self.max_heart_rate,
+            'hrv': self.hrv,
+            'last_updated': self.fetched_at.strftime('%Y-%m-%d %H:%M') if self.fetched_at else 'N/A'
+        }
+    
+    def __repr__(self):
+        return f'<FitbitData {self.user.username} {self.date}>'
