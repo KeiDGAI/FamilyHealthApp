@@ -27,6 +27,18 @@
                     <div class="col-sm-3 fw-bold">登録日:</div>
                     <div class="col-sm-9">{{ user.created_at.strftime('%Y年%m月%d日 %H:%M') }}</div>
                 </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">Fitbit連携:</div>
+                    <div class="col-sm-9">
+                        {% if user.fitbit_access_token %}
+                            <span class="badge bg-success">連携済み</span>
+                            <small class="text-muted d-block">User ID: {{ user.fitbit_user_id }}</small>
+                        {% else %}
+                            <span class="badge bg-secondary">未連携</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
             <div class="card-footer">
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">

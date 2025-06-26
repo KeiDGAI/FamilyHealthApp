@@ -102,7 +102,18 @@ This is a Flask-based family health management web application built with Python
 
 Preferred communication style: Simple, everyday language.
 
-## Changelog
+## Recent Changes
 
-Changelog:
-- June 26, 2025. Initial setup
+- **June 26, 2025**: Fitbit OAuth 2.0 integration added
+  - Added Fitbit OAuth routes and database fields
+  - Implemented complete OAuth flow with proper security
+  - Updated UI to show connection status and controls
+  - Added requests-oauthlib dependency for OAuth handling
+- **June 26, 2025**: Simplified user registration form
+  - Removed name, age, and gender fields from registration
+  - Username now serves as display name
+  - Streamlined to username, email, and password only
+- **June 26, 2025**: Initial Flask app setup
+  - Session-based authentication system
+  - Bootstrap dark theme UI
+  - SQLite database with User model

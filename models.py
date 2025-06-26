@@ -10,6 +10,12 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Fitbit OAuth tokens
+    fitbit_user_id = db.Column(db.String(50))
+    fitbit_access_token = db.Column(db.Text)
+    fitbit_refresh_token = db.Column(db.Text)
+    fitbit_token_expires_at = db.Column(db.DateTime)
+    
     def set_password(self, password):
         """パスワードをハッシュ化して保存"""
         self.password_hash = generate_password_hash(password)

@@ -64,7 +64,28 @@
                 </h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">健康管理機能は今後追加予定です。</p>
+                <!-- Fitbit 連携状態 -->
+                {% if user.fitbit_access_token %}
+                <div class="alert alert-success" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Fitbitアカウントと連携済み
+                </div>
+                <div class="d-grid mb-3">
+                    <a href="{{ url_for('disconnect_fitbit') }}" class="btn btn-outline-danger">
+                        <i class="fas fa-unlink me-1"></i>Fitbit連携を解除
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Fitbitと連携して健康データを自動取得
+                </div>
+                <div class="d-grid mb-3">
+                    <a href="{{ url_for('connect_fitbit') }}" class="btn btn-primary">
+                        <i class="fab fa-fitbit me-1"></i>Connect Fitbit
+                    </a>
+                </div>
+                {% endif %}
                 
                 <div class="list-group list-group-flush">
                     <div class="list-group-item d-flex justify-content-between align-items-center">
