@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}グループ参加 - 家族健康管理アプリ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                    <h2 class="card-title">ファミリーグループに参加</h2>
+                    <p class="text-muted">招待コードを入力してグループに参加しましょう</p>
+                </div>
+
+                <form method="POST">
+                    <div class="mb-4">
+                        <label for="invite_code" class="form-label">
+                            <i class="fas fa-key me-1"></i>招待コード <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control form-control-lg text-center" 
+                               id="invite_code" name="invite_code" required 
+                               placeholder="8文字のコードを入力" 
+                               maxlength="8" 
+                               style="text-transform: uppercase; letter-spacing: 2px; font-weight: bold;">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            ファミリーグループの管理者から招待コードを教えてもらってください
+                        </div>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-1"></i>グループに参加
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center">
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>ホームに戻る
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-lightbulb me-2"></i>ファミリーグループについて</h6>
+                    <ul class="mb-0 small">
+                        <li>家族全員の健康データを一つのダッシュボードで確認できます</li>
+                        <li>各メンバーのAI健康アドバイスを共有できます</li>
+                        <li>プライバシーは保護され、同じグループのメンバーのみデータを閲覧可能です</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inviteCodeField = document.getElementById('invite_code');
+    
+    // Auto-uppercase and format invite code
+    inviteCodeField.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    
+    // Auto-focus on the invite code field
+    inviteCodeField.focus();
+});
+</script>
+{% endblock %}

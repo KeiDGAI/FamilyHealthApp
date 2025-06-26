@@ -104,6 +104,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 26, 2025**: Family Groups functionality implementation
+  - Added comprehensive family group system with invite codes for secure family data sharing
+  - Enhanced registration process to support creating new groups or joining existing ones
+  - Implemented family dashboard showing all members' health data in unified view
+  - Added group management features (join, leave, invite code display)
+  - Secured data access with group-based permissions ensuring privacy
+  - Integrated AI health comments for all family members on shared dashboard
 - **June 26, 2025**: Enhanced chart visualization and test user system
   - Implemented dedicated full-screen chart pages with bar charts for better readability
   - Added automatic test user creation (username: user, password: testtest)

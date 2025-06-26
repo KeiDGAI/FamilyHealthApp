@@ -49,6 +49,56 @@
                         </div>
                     </div>
 
+                    <!-- Family Group Selection -->
+                    <div class="card mb-4" style="border: 2px solid var(--bs-primary);">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h6 class="mb-0">
+                                <i class="fas fa-users me-2"></i>ファミリーグループ設定
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">グループの設定方法を選択してください</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="group_action" id="create_group" value="create" checked>
+                                    <label class="form-check-label" for="create_group">
+                                        <i class="fas fa-plus-circle text-success me-1"></i>新しいファミリーグループを作成する
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="group_action" id="join_group" value="join">
+                                    <label class="form-check-label" for="join_group">
+                                        <i class="fas fa-sign-in-alt text-primary me-1"></i>既存のファミリーグループに参加する
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Create Group Fields -->
+                            <div id="create_group_fields">
+                                <div class="mb-3">
+                                    <label for="group_name" class="form-label">
+                                        <i class="fas fa-home me-1"></i>ファミリーグループ名 <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="group_name" name="group_name" 
+                                           placeholder="例: 田中家">
+                                    <div class="form-text">家族の名前やニックネームを入力してください</div>
+                                </div>
+                            </div>
+
+                            <!-- Join Group Fields -->
+                            <div id="join_group_fields" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="invite_code" class="form-label">
+                                        <i class="fas fa-key me-1"></i>招待コード <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="invite_code" name="invite_code" 
+                                           placeholder="8文字の招待コードを入力" maxlength="8" style="text-transform: uppercase;">
+                                    <div class="form-text">ファミリーグループの管理者から招待コードを教えてもらってください</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-grid mb-3">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-user-plus me-1"></i>登録する
@@ -66,4 +116,38 @@
         </div>
     </div>
 </div>
+
+<script>
+// Family Group toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const createGroupRadio = document.getElementById('create_group');
+    const joinGroupRadio = document.getElementById('join_group');
+    const createGroupFields = document.getElementById('create_group_fields');
+    const joinGroupFields = document.getElementById('join_group_fields');
+    const groupNameField = document.getElementById('group_name');
+    const inviteCodeField = document.getElementById('invite_code');
+
+    function toggleGroupFields() {
+        if (createGroupRadio.checked) {
+            createGroupFields.style.display = 'block';
+            joinGroupFields.style.display = 'none';
+            groupNameField.required = true;
+            inviteCodeField.required = false;
+        } else {
+            createGroupFields.style.display = 'none';
+            joinGroupFields.style.display = 'block';
+            groupNameField.required = false;
+            inviteCodeField.required = true;
+        }
+    }
+
+    createGroupRadio.addEventListener('change', toggleGroupFields);
+    joinGroupRadio.addEventListener('change', toggleGroupFields);
+
+    // Auto-uppercase invite code input
+    inviteCodeField.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+    });
+});
+</script>
 {% endblock %}

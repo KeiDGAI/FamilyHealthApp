@@ -7,7 +7,7 @@ import requests
 import json
 from openai import OpenAI
 from app import app, db
-from models import User
+from models import User, FamilyGroup
 
 # OpenAI client initialization
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -252,14 +252,23 @@ def create_test_user():
     try:
         test_user = User.query.filter_by(username='user').first()
         if not test_user:
+            # テスト用ファミリーグループを作成
+            test_group = FamilyGroup.query.filter_by(name='テスト家族').first()
+            if not test_group:
+                test_group = FamilyGroup(name='テスト家族')
+                db.session.add(test_group)
+                db.session.flush()
+            
+            # テストユーザーを作成
             test_user = User()
             test_user.username = 'user'
             test_user.email = 'test@example.com'
             test_user.set_password('testtest')
+            test_user.group_id = test_group.id
             
             db.session.add(test_user)
             db.session.commit()
-            app.logger.info('Test user created: user/testtest')
+            app.logger.info(f'Test user created: user/testtest with group: {test_group.invite_code}')
     except Exception as e:
         app.logger.error(f'Error creating test user: {e}')
         db.session.rollback()
@@ -293,7 +302,7 @@ def index():
         session.clear()
         return redirect(url_for('login'))
     
-    # Fitbitデータの取得
+    # 自分のFitbitデータの取得
     fitbit_data = None
     weekly_data = None
     health_comment = None
@@ -303,7 +312,97 @@ def index():
         if fitbit_data:
             health_comment = generate_health_comment(fitbit_data)
     
-    return render_template('index.html', user=user, fitbit_data=fitbit_data, weekly_data=weekly_data, health_comment=health_comment)
+    # ファミリーグループメンバーのデータを取得
+    family_members_data = []
+    if user.group_id:
+        family_group = user.family_group
+        all_members = User.query.filter_by(group_id=user.group_id).all()
+        
+        for member in all_members:
+            member_data = {
+                'user': member,
+                'fitbit_data': None,
+                'health_comment': None,
+                'is_current_user': member.id == user.id
+            }
+            
+            if member.fitbit_access_token:
+                member_fitbit_data = get_fitbit_daily_data(member)
+                if member_fitbit_data:
+                    member_data['fitbit_data'] = member_fitbit_data
+                    # Generate health comment for family members too
+                    member_data['health_comment'] = generate_health_comment(member_fitbit_data)
+            
+            family_members_data.append(member_data)
+    
+    return render_template('index.html', 
+                         user=user, 
+                         fitbit_data=fitbit_data, 
+                         weekly_data=weekly_data, 
+                         health_comment=health_comment,
+                         family_members_data=family_members_data,
+                         family_group=user.family_group if user.group_id else None)
+
+@app.route('/group/leave', methods=['POST'])
+def leave_group():
+    """ファミリーグループから脱退"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user or not user.group_id:
+        flash('グループに参加していません。', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        group_name = user.family_group.name if user.family_group else 'グループ'
+        user.group_id = None
+        db.session.commit()
+        flash(f'ファミリーグループ「{group_name}」から脱退しました。', 'info')
+    except Exception as e:
+        db.session.rollback()
+        flash('グループ脱退中にエラーが発生しました。', 'error')
+        app.logger.error(f'Group leave error: {e}')
+    
+    return redirect(url_for('index'))
+
+@app.route('/group/join', methods=['GET', 'POST'])
+def join_group():
+    """既存のファミリーグループに参加"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    if user.group_id:
+        flash('既にファミリーグループに参加しています。', 'info')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        invite_code = request.form.get('invite_code')
+        
+        if not invite_code:
+            flash('招待コードを入力してください。', 'error')
+            return render_template('join_group.html')
+        
+        family_group = FamilyGroup.query.filter_by(invite_code=invite_code.upper()).first()
+        if not family_group:
+            flash('無効な招待コードです。', 'error')
+            return render_template('join_group.html')
+        
+        try:
+            user.group_id = family_group.id
+            db.session.commit()
+            flash(f'ファミリーグループ「{family_group.name}」に参加しました！', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            db.session.rollback()
+            flash('グループ参加中にエラーが発生しました。', 'error')
+            app.logger.error(f'Group join error: {e}')
+    
+    return render_template('join_group.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -336,8 +435,11 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
+        group_action = request.form.get('group_action')
+        group_name = request.form.get('group_name')
+        invite_code = request.form.get('invite_code')
         
-        # バリデーション
+        # 基本バリデーション
         if not all([username, email, password]):
             flash('すべての必須項目を入力してください。', 'error')
             return render_template('register.html')
@@ -350,6 +452,15 @@ def register():
             flash('パスワードは6文字以上で入力してください。', 'error')
             return render_template('register.html')
         
+        # ファミリーグループ関連のバリデーション
+        if group_action == 'create' and not group_name:
+            flash('ファミリーグループ名を入力してください。', 'error')
+            return render_template('register.html')
+        
+        if group_action == 'join' and not invite_code:
+            flash('招待コードを入力してください。', 'error')
+            return render_template('register.html')
+        
         # 既存ユーザーチェック
         if User.query.filter_by(username=username).first():
             flash('このユーザー名は既に使用されています。', 'error')
@@ -359,17 +470,49 @@ def register():
             flash('このメールアドレスは既に使用されています。', 'error')
             return render_template('register.html')
         
-        # 新規ユーザー作成
-        user = User()
-        user.username = username
-        user.email = email
-        user.set_password(password)
-        
         try:
+            # ファミリーグループ処理
+            family_group = None
+            if group_action == 'create':
+                # 新しいファミリーグループを作成
+                family_group = FamilyGroup(name=group_name)
+                db.session.add(family_group)
+                db.session.flush()  # IDを取得するためにflush
+                
+            elif group_action == 'join':
+                # 既存のファミリーグループに参加
+                if invite_code:
+                    family_group = FamilyGroup.query.filter_by(invite_code=invite_code.upper()).first()
+                    if not family_group:
+                        flash('無効な招待コードです。正しいコードを入力してください。', 'error')
+                        return render_template('register.html')
+                else:
+                    flash('招待コードを入力してください。', 'error')
+                    return render_template('register.html')
+            
+            # 新規ユーザー作成
+            user = User()
+            user.username = username
+            user.email = email
+            user.set_password(password)
+            
+            if family_group:
+                user.group_id = family_group.id
+                if group_action == 'create':
+                    family_group.created_by = user.id
+            
             db.session.add(user)
             db.session.commit()
-            flash('登録が完了しました。ログインしてください。', 'success')
+            
+            if group_action == 'create' and family_group:
+                flash(f'登録が完了しました。ファミリーグループ「{group_name}」を作成しました。招待コード: {family_group.invite_code}', 'success')
+            elif group_action == 'join' and family_group:
+                flash(f'登録が完了しました。ファミリーグループ「{family_group.name}」に参加しました。', 'success')
+            else:
+                flash('登録が完了しました。ログインしてください。', 'success')
+                
             return redirect(url_for('login'))
+            
         except Exception as e:
             db.session.rollback()
             flash('登録中にエラーが発生しました。もう一度お試しください。', 'error')

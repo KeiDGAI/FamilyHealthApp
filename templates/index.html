@@ -54,6 +54,37 @@
         </div>
     </div>
 
+    <!-- ファミリーグループ情報 -->
+    {% if family_group %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    ファミリーグループ
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">グループ名:</div>
+                    <div class="col-sm-8">{{ family_group.name }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4 fw-bold">招待コード:</div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-primary fs-6">{{ family_group.invite_code }}</span>
+                        <small class="text-muted d-block">家族を招待する際にお使いください</small>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">メンバー数:</div>
+                    <div class="col-sm-8">{{ family_members_data|length }}人</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 健康管理メニュー -->
     <div class="col-md-6 mb-4">
         <div class="card h-100">
@@ -252,6 +283,126 @@
         </div>
     </div>
 </div>
+
+<!-- ファミリーダッシュボード -->
+{% if family_members_data %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-home me-2"></i>
+                        ファミリーダッシュボード - 今日の健康データ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for member_data in family_members_data %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 {% if member_data.is_current_user %}border-primary{% endif %}">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ member_data.user.username }}
+                                        {% if member_data.is_current_user %}
+                                        <span class="badge bg-primary ms-2">あなた</span>
+                                        {% endif %}
+                                    </h6>
+                                    {% if member_data.user.fitbit_access_token %}
+                                    <i class="fas fa-check-circle text-success" title="Fitbit連携済み"></i>
+                                    {% else %}
+                                    <i class="fas fa-minus-circle text-muted" title="Fitbit未連携"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    {% if member_data.fitbit_data %}
+                                    <!-- Health Metrics -->
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-primary bg-opacity-10 rounded">
+                                                <i class="fas fa-walking text-primary"></i>
+                                                <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.steps) }}</div>
+                                                <small class="text-muted">歩</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-danger bg-opacity-10 rounded">
+                                                <i class="fas fa-fire text-danger"></i>
+                                                <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.calories_burned) }}</div>
+                                                <small class="text-muted">kcal</small>
+                                            </div>
+                                        </div>
+                                        {% if member_data.fitbit_data.resting_heart_rate %}
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-success bg-opacity-10 rounded">
+                                                <i class="fas fa-heartbeat text-success"></i>
+                                                <div class="fw-bold">{{ member_data.fitbit_data.resting_heart_rate }}</div>
+                                                <small class="text-muted">bpm</small>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% if member_data.fitbit_data.hrv %}
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-info bg-opacity-10 rounded">
+                                                <i class="fas fa-chart-line text-info"></i>
+                                                <div class="fw-bold">{{ member_data.fitbit_data.hrv }}</div>
+                                                <small class="text-muted">ms</small>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- AI Health Comment -->
+                                    {% if member_data.health_comment %}
+                                    <div class="alert alert-info p-2 mb-0">
+                                        <div class="d-flex align-items-start">
+                                            <i class="fas fa-robot me-2 mt-1"></i>
+                                            <div>
+                                                <small class="fw-bold">AI健康アドバイス</small>
+                                                <div class="small">{{ member_data.health_comment[:100] }}{% if member_data.health_comment|length > 100 %}...{% endif %}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% else %}
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <p class="mb-0">Fitbitデータなし</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer text-center">
+                                    <small class="text-muted">
+                                        {% if member_data.fitbit_data %}
+                                        最終更新: {{ member_data.fitbit_data.last_updated }}
+                                        {% else %}
+                                        Fitbit連携が必要です
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if family_members_data|length == 1 %}
+                    <div class="text-center mt-3">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            ファミリーグループに他のメンバーを招待して、家族全員の健康状況を確認しましょう！
+                            <br>
+                            招待コード: <strong>{{ family_group.invite_code }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <script>
 // AI Comment Toggle Functionality
