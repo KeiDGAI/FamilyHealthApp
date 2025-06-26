@@ -21,7 +21,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # Fitbit OAuth 設定
 app.config['FITBIT_CLIENT_ID'] = os.environ.get('FITBIT_CLIENT_ID', 'your-fitbit-client-id')
 app.config['FITBIT_CLIENT_SECRET'] = os.environ.get('FITBIT_CLIENT_SECRET', 'your-fitbit-client-secret')
-app.config['FITBIT_REDIRECT_URI'] = os.environ.get('FITBIT_REDIRECT_URI', 'http://localhost:5000/fitbit_callback')
+app.config['FITBIT_REDIRECT_URI'] = os.environ.get('FITBIT_REDIRECT_URI', 'https://5b27a254-49e0-42cd-9a29-85b77c9f8a19-00-3l3yagrihshtf.riker.replit.dev/fitbit_callback')
 
 # データベース設定（SQLite）
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
