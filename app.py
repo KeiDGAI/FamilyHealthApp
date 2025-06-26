@@ -5,8 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# 環境判定
-IS_PRODUCTION = os.environ.get('REPLIT_DEPLOYMENT', False)
+# 環境判定 - より確実な本番環境検出
+IS_PRODUCTION = bool(os.environ.get('REPLIT_DEPLOYMENT')) or 'replit.app' in os.environ.get('REPLIT_DOMAINS', '')
 
 # ログ設定
 if IS_PRODUCTION:
@@ -27,9 +27,9 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # Fitbit OAuth 設定
 app.config['FITBIT_CLIENT_ID'] = os.environ.get('FITBIT_CLIENT_ID', 'your-fitbit-client-id')
 app.config['FITBIT_CLIENT_SECRET'] = os.environ.get('FITBIT_CLIENT_SECRET', 'your-fitbit-client-secret')
-# 動的にRedirect URIを設定
-replit_domain = os.environ.get('REPLIT_DOMAINS', '5b27a254-49e0-42cd-9a29-85b77c9f8a19-00-3l3yagrihshtf.riker.replit.dev')
-app.config['FITBIT_REDIRECT_URI'] = os.environ.get('FITBIT_REDIRECT_URI', f'https://{replit_domain}/fitbit_callback')
+
+# Fitbit Redirect URIを設定 - 本番環境のURLを使用
+app.config['FITBIT_REDIRECT_URI'] = 'https://family-health-tracker-wkeisuke.replit.app/fitbit_callback'
 
 # データベース設定
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///:memory:")
