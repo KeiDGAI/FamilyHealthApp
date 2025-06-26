@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}{{ metric_info.title }} - 7日間の推移{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- ヘッダー -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i> 戻る
+                </a>
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas {{ metric_info.icon }} me-2" style="color: {{ metric_info.color }};"></i>
+                        {{ metric_info.title }}
+                    </h2>
+                    <p class="text-muted mb-0">過去7日間の推移</p>
+                </div>
+            </div>
+
+            <!-- チャートカード -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        {{ metric_info.title }}の7日間推移
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container-large">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                </div>
+                <div class="card-footer text-muted">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        データはFitbitから取得されています
+                    </small>
+                </div>
+            </div>
+
+            <!-- 統計情報 -->
+            <div class="row mt-4">
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">平均値</h6>
+                            <h4 class="text-primary" id="avgValue">-</h4>
+                            <small class="text-muted">{{ metric_info.unit }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">最高値</h6>
+                            <h4 class="text-success" id="maxValue">-</h4>
+                            <small class="text-muted">{{ metric_info.unit }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">最低値</h6>
+                            <h4 class="text-warning" id="minValue">-</h4>
+                            <small class="text-muted">{{ metric_info.unit }}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">今日の値</h6>
+                            <h4 class="text-info" id="todayValue">-</h4>
+                            <small class="text-muted">{{ metric_info.unit }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 週間データを準備
+const weeklyData = {
+    dates: {{ weekly_data.dates | tojson }},
+    steps: {{ weekly_data.steps | tojson }},
+    calories: {{ weekly_data.calories | tojson }},
+    resting_hr: {{ weekly_data.resting_hr | tojson }},
+    max_hr: {{ weekly_data.max_hr | tojson }},
+    hrv: {{ weekly_data.hrv | tojson }}
+};
+
+const metric = '{{ metric }}';
+const metricInfo = {{ metric_info | tojson }};
+
+// 日付を短縮形式に変換
+const shortDates = weeklyData.dates.map(date => {
+    const d = new Date(date);
+    return (d.getMonth() + 1) + '/' + d.getDate() + ' (' + ['日','月','火','水','木','金','土'][d.getDay()] + ')';
+});
+
+// メトリクスに応じたデータを取得
+let chartData;
+switch(metric) {
+    case 'steps':
+        chartData = weeklyData.steps;
+        break;
+    case 'calories':
+        chartData = weeklyData.calories;
+        break;
+    case 'resting_hr':
+        chartData = weeklyData.resting_hr;
+        break;
+    case 'max_hr':
+        chartData = weeklyData.max_hr;
+        break;
+    case 'hrv':
+        chartData = weeklyData.hrv;
+        break;
+}
+
+// null値を除外してデータを準備
+const validData = chartData.map((value, index) => ({
+    date: shortDates[index],
+    value: value
+})).filter(item => item.value !== null && item.value !== undefined);
+
+// 統計計算
+if (validData.length > 0) {
+    const values = validData.map(item => item.value);
+    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const today = values[values.length - 1];
+
+    document.getElementById('avgValue').textContent = Math.round(avg).toLocaleString();
+    document.getElementById('maxValue').textContent = max.toLocaleString();
+    document.getElementById('minValue').textContent = min.toLocaleString();
+    document.getElementById('todayValue').textContent = today.toLocaleString();
+}
+
+// チャート作成
+const ctx = document.getElementById('mainChart').getContext('2d');
+const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: validData.map(item => item.date),
+        datasets: [{
+            label: metricInfo.title,
+            data: validData.map(item => item.value),
+            backgroundColor: metricInfo.color + '80',
+            borderColor: metricInfo.color,
+            borderWidth: 2,
+            borderRadius: 4,
+            borderSkipped: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y.toLocaleString() + metricInfo.unit;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    color: '#495057'
+                },
+                ticks: {
+                    color: '#adb5bd',
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            y: {
+                grid: {
+                    color: '#495057'
+                },
+                ticks: {
+                    color: '#adb5bd',
+                    font: {
+                        size: 12
+                    },
+                    callback: function(value) {
+                        return value.toLocaleString() + metricInfo.unit;
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

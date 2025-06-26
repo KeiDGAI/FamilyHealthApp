@@ -104,12 +104,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **June 26, 2025**: Interactive 7-day trend charts with Chart.js
-  - Added clickable metric cards for steps, calories, heart rate, and HRV
-  - Integrated Chart.js for responsive line charts showing 7-day trends
-  - Smooth animations and transitions for metric-to-chart switching
-  - Mobile-responsive design with proper touch interactions
-  - Dark theme styling consistent with Bootstrap theme
+- **June 26, 2025**: Enhanced chart visualization and test user system
+  - Implemented dedicated full-screen chart pages with bar charts for better readability
+  - Added automatic test user creation (username: user, password: testtest)
+  - Integrated statistical analysis (average, max, min, today's values) for each metric
+  - Replaced inline charts with navigation to dedicated chart views
+  - Improved mobile responsiveness for chart displays
+  - Dark theme styling optimized for large chart visualization
 - **June 26, 2025**: OpenAI GPT-4o integration for health insights
   - Added AI-powered health commentary generation
   - Integrated with Fitbit daily data (steps, calories, heart rate, HRV)

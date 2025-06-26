@@ -161,6 +161,44 @@ footer {
     opacity: 0.7;
 }
 
+/* 大きなチャートコンテナのスタイル */
+.chart-container-large {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    margin: 1rem 0;
+}
+
+.chart-container-large canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* メトリックカードのリンクスタイル */
+.metric-card a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.metric-card a:hover {
+    color: inherit;
+}
+
+/* グラフアイコンを右上に表示 */
+.metric-card::after {
+    content: "📊";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.metric-card:hover::after {
+    opacity: 0.8;
+}
+
 /* モバイル対応の調整 */
 @media (max-width: 576px) {
     .metric-card {
@@ -174,5 +212,9 @@ footer {
     .chart-container .back-btn {
         font-size: 0.7rem;
         padding: 0.2rem 0.4rem;
+    }
+    
+    .chart-container-large {
+        height: 300px;
     }
 }

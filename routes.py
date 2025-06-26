@@ -247,9 +247,25 @@ def generate_health_comment(fitbit_data):
         return "健康コメントの生成中にエラーが発生しました。しばらく経ってからもう一度お試しください。"
 
 # Route handlers
+def create_test_user():
+    """テストユーザーを作成（存在しない場合のみ）"""
+    test_user = User.query.filter_by(username='user').first()
+    if not test_user:
+        test_user = User()
+        test_user.username = 'user'
+        test_user.email = 'test@example.com'
+        test_user.set_password('testtest')
+        
+        db.session.add(test_user)
+        db.session.commit()
+        app.logger.info('Test user created: user/testtest')
+
 @app.route('/')
 def index():
     """ホームページ - ログインチェック"""
+    # テストユーザーを作成
+    create_test_user()
+    
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -481,3 +497,38 @@ def disconnect_fitbit():
         flash('Fitbit連携を解除しました。', 'info')
     
     return redirect(url_for('index'))
+
+@app.route('/chart/<metric>')
+def chart_view(metric):
+    """個別チャート表示ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user or not user.fitbit_access_token:
+        flash('Fitbitデータが利用できません。', 'error')
+        return redirect(url_for('index'))
+    
+    # 有効なメトリクスかチェック
+    valid_metrics = ['steps', 'calories', 'resting_hr', 'max_hr', 'hrv']
+    if metric not in valid_metrics:
+        flash('無効なメトリクスです。', 'error')
+        return redirect(url_for('index'))
+    
+    # 週間データを取得
+    weekly_data = get_fitbit_weekly_data(user)
+    
+    # メトリクス情報を設定
+    metric_info = {
+        'steps': {'title': '歩数', 'unit': '歩', 'color': '#0d6efd', 'icon': 'fa-walking'},
+        'calories': {'title': '消費カロリー', 'unit': 'kcal', 'color': '#dc3545', 'icon': 'fa-fire'},
+        'resting_hr': {'title': '安静時心拍数', 'unit': 'bpm', 'color': '#198754', 'icon': 'fa-heartbeat'},
+        'max_hr': {'title': '最大心拍数', 'unit': 'bpm', 'color': '#ffc107', 'icon': 'fa-tachometer-alt'},
+        'hrv': {'title': '心拍変動 (HRV)', 'unit': 'ms', 'color': '#0dcaf0', 'icon': 'fa-chart-line'}
+    }
+    
+    return render_template('chart.html', 
+                         metric=metric, 
+                         metric_info=metric_info[metric],
+                         weekly_data=weekly_data,
+                         user=user)
