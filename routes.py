@@ -119,21 +119,31 @@ def connect_fitbit():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    # Fitbit OAuth 2.0の設定
-    authorization_base_url = 'https://www.fitbit.com/oauth2/authorize'
-    
-    fitbit = OAuth2Session(
-        app.config['FITBIT_CLIENT_ID'],
-        scope=['activity', 'heartrate', 'location', 'nutrition', 'profile', 'settings', 'sleep', 'social', 'weight'],
-        redirect_uri=app.config['FITBIT_REDIRECT_URI']
-    )
-    
-    authorization_url, state = fitbit.authorization_url(authorization_base_url)
-    
-    # stateをセッションに保存（セキュリティのため）
-    session['fitbit_oauth_state'] = state
-    
-    return redirect(authorization_url)
+    try:
+        # Fitbit OAuth 2.0の設定
+        authorization_base_url = 'https://www.fitbit.com/oauth2/authorize'
+        
+        app.logger.info(f'Using Client ID: {app.config["FITBIT_CLIENT_ID"][:8]}...')
+        app.logger.info(f'Using Redirect URI: {app.config["FITBIT_REDIRECT_URI"]}')
+        
+        fitbit = OAuth2Session(
+            app.config['FITBIT_CLIENT_ID'],
+            scope=['activity', 'heartrate', 'location', 'nutrition', 'profile', 'settings', 'sleep', 'social', 'weight'],
+            redirect_uri=app.config['FITBIT_REDIRECT_URI']
+        )
+        
+        authorization_url, state = fitbit.authorization_url(authorization_base_url)
+        
+        # stateをセッションに保存（セキュリティのため）
+        session['fitbit_oauth_state'] = state
+        
+        app.logger.info(f'Redirecting to: {authorization_url}')
+        return redirect(authorization_url)
+        
+    except Exception as e:
+        app.logger.error(f'Error starting OAuth flow: {e}')
+        flash('Fitbit認証の開始中にエラーが発生しました。設定を確認してください。', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/fitbit_callback')
 def fitbit_callback():
