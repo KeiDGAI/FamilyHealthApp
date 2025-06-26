@@ -75,62 +75,92 @@
                 {% if fitbit_data %}
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <div class="card text-center h-100">
+                        <div class="card text-center h-100 metric-card" data-metric="steps" style="cursor: pointer;">
                             <div class="card-body p-2">
-                                <i class="fas fa-walking text-primary fa-lg mb-1"></i>
-                                <h6 class="card-title mb-1">歩数</h6>
-                                <h5 class="text-primary mb-0">{{ "{:,}".format(fitbit_data.steps) }}</h5>
-                                <small class="text-muted">歩</small>
+                                <div class="metric-display">
+                                    <i class="fas fa-walking text-primary fa-lg mb-1"></i>
+                                    <h6 class="card-title mb-1">歩数</h6>
+                                    <h5 class="text-primary mb-0">{{ "{:,}".format(fitbit_data.steps) }}</h5>
+                                    <small class="text-muted">歩</small>
+                                </div>
+                                <div class="chart-container" style="display: none;">
+                                    <canvas id="stepsChart" width="100" height="80"></canvas>
+                                    <button class="btn btn-sm btn-outline-secondary mt-1 back-btn">戻る</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card text-center h-100">
+                        <div class="card text-center h-100 metric-card" data-metric="calories" style="cursor: pointer;">
                             <div class="card-body p-2">
-                                <i class="fas fa-fire text-danger fa-lg mb-1"></i>
-                                <h6 class="card-title mb-1">消費カロリー</h6>
-                                <h5 class="text-danger mb-0">{{ "{:,}".format(fitbit_data.calories_burned) }}</h5>
-                                <small class="text-muted">kcal</small>
+                                <div class="metric-display">
+                                    <i class="fas fa-fire text-danger fa-lg mb-1"></i>
+                                    <h6 class="card-title mb-1">消費カロリー</h6>
+                                    <h5 class="text-danger mb-0">{{ "{:,}".format(fitbit_data.calories_burned) }}</h5>
+                                    <small class="text-muted">kcal</small>
+                                </div>
+                                <div class="chart-container" style="display: none;">
+                                    <canvas id="caloriesChart" width="100" height="80"></canvas>
+                                    <button class="btn btn-sm btn-outline-secondary mt-1 back-btn">戻る</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card text-center h-100">
+                        <div class="card text-center h-100 metric-card" data-metric="resting_hr" style="cursor: pointer;">
                             <div class="card-body p-2">
-                                <i class="fas fa-heartbeat text-success fa-lg mb-1"></i>
-                                <h6 class="card-title mb-1">安静時心拍数</h6>
-                                {% if fitbit_data.resting_heart_rate %}
-                                <h5 class="text-success mb-0">{{ fitbit_data.resting_heart_rate }}</h5>
-                                <small class="text-muted">bpm</small>
-                                {% else %}
-                                <small class="text-muted">データなし</small>
-                                {% endif %}
+                                <div class="metric-display">
+                                    <i class="fas fa-heartbeat text-success fa-lg mb-1"></i>
+                                    <h6 class="card-title mb-1">安静時心拍数</h6>
+                                    {% if fitbit_data.resting_heart_rate %}
+                                    <h5 class="text-success mb-0">{{ fitbit_data.resting_heart_rate }}</h5>
+                                    <small class="text-muted">bpm</small>
+                                    {% else %}
+                                    <small class="text-muted">データなし</small>
+                                    {% endif %}
+                                </div>
+                                <div class="chart-container" style="display: none;">
+                                    <canvas id="restingHrChart" width="100" height="80"></canvas>
+                                    <button class="btn btn-sm btn-outline-secondary mt-1 back-btn">戻る</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card text-center h-100">
+                        <div class="card text-center h-100 metric-card" data-metric="max_hr" style="cursor: pointer;">
                             <div class="card-body p-2">
-                                <i class="fas fa-tachometer-alt text-warning fa-lg mb-1"></i>
-                                <h6 class="card-title mb-1">最大心拍数</h6>
-                                {% if fitbit_data.max_heart_rate %}
-                                <h5 class="text-warning mb-0">{{ fitbit_data.max_heart_rate }}</h5>
-                                <small class="text-muted">bpm</small>
-                                {% else %}
-                                <small class="text-muted">データなし</small>
-                                {% endif %}
+                                <div class="metric-display">
+                                    <i class="fas fa-tachometer-alt text-warning fa-lg mb-1"></i>
+                                    <h6 class="card-title mb-1">最大心拍数</h6>
+                                    {% if fitbit_data.max_heart_rate %}
+                                    <h5 class="text-warning mb-0">{{ fitbit_data.max_heart_rate }}</h5>
+                                    <small class="text-muted">bpm</small>
+                                    {% else %}
+                                    <small class="text-muted">データなし</small>
+                                    {% endif %}
+                                </div>
+                                <div class="chart-container" style="display: none;">
+                                    <canvas id="maxHrChart" width="100" height="80"></canvas>
+                                    <button class="btn btn-sm btn-outline-secondary mt-1 back-btn">戻る</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 {% if fitbit_data.hrv %}
-                <div class="card mb-3">
+                <div class="card mb-3 metric-card" data-metric="hrv" style="cursor: pointer;">
                     <div class="card-body text-center p-2">
-                        <i class="fas fa-chart-line text-info fa-lg mb-1"></i>
-                        <h6 class="card-title mb-1">心拍変動 (HRV)</h6>
-                        <h5 class="text-info mb-0">{{ fitbit_data.hrv }}</h5>
-                        <small class="text-muted">ms</small>
+                        <div class="metric-display">
+                            <i class="fas fa-chart-line text-info fa-lg mb-1"></i>
+                            <h6 class="card-title mb-1">心拍変動 (HRV)</h6>
+                            <h5 class="text-info mb-0">{{ fitbit_data.hrv }}</h5>
+                            <small class="text-muted">ms</small>
+                        </div>
+                        <div class="chart-container" style="display: none;">
+                            <canvas id="hrvChart" width="200" height="100"></canvas>
+                            <button class="btn btn-sm btn-outline-secondary mt-1 back-btn">戻る</button>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -232,4 +262,184 @@
         </div>
     </div>
 </div>
+
+{% if weekly_data %}
+<script>
+// 週間データを JavaScript で使えるように準備
+const weeklyData = {
+    dates: {{ weekly_data.dates | tojson }},
+    steps: {{ weekly_data.steps | tojson }},
+    calories: {{ weekly_data.calories | tojson }},
+    resting_hr: {{ weekly_data.resting_hr | tojson }},
+    max_hr: {{ weekly_data.max_hr | tojson }},
+    hrv: {{ weekly_data.hrv | tojson }}
+};
+
+// 日付を短縮形式に変換
+const shortDates = weeklyData.dates.map(date => {
+    const d = new Date(date);
+    return (d.getMonth() + 1) + '/' + d.getDate();
+});
+
+// Chart.js のダークテーマカラー設定
+const chartColors = {
+    steps: '#0d6efd',
+    calories: '#dc3545',
+    resting_hr: '#198754',
+    max_hr: '#ffc107',
+    hrv: '#0dcaf0'
+};
+
+// チャート作成関数
+function createChart(canvasId, data, label, color, unit = '') {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    // null 値を除外
+    const filteredData = data.map((value, index) => ({
+        x: shortDates[index],
+        y: value
+    })).filter(point => point.y !== null && point.y !== undefined);
+    
+    return new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: filteredData.map(point => point.x),
+            datasets: [{
+                label: label,
+                data: filteredData.map(point => point.y),
+                borderColor: color,
+                backgroundColor: color + '20',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: color,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: '#495057'
+                    },
+                    ticks: {
+                        color: '#adb5bd',
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: '#495057'
+                    },
+                    ticks: {
+                        color: '#adb5bd',
+                        font: {
+                            size: 10
+                        },
+                        callback: function(value) {
+                            return value + unit;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 現在表示中のチャート
+let currentChart = null;
+
+// メトリックカードのクリックイベント
+document.querySelectorAll('.metric-card').forEach(card => {
+    card.addEventListener('click', function() {
+        const metric = this.dataset.metric;
+        const metricDisplay = this.querySelector('.metric-display');
+        const chartContainer = this.querySelector('.chart-container');
+        
+        // 既存のチャートを破棄
+        if (currentChart) {
+            currentChart.destroy();
+        }
+        
+        // 表示を切り替え
+        metricDisplay.style.display = 'none';
+        chartContainer.style.display = 'block';
+        
+        // メトリックに応じてチャートを作成
+        let chartData, label, color, unit;
+        
+        switch(metric) {
+            case 'steps':
+                chartData = weeklyData.steps;
+                label = '歩数';
+                color = chartColors.steps;
+                unit = '';
+                currentChart = createChart('stepsChart', chartData, label, color, unit);
+                break;
+            case 'calories':
+                chartData = weeklyData.calories;
+                label = '消費カロリー';
+                color = chartColors.calories;
+                unit = 'kcal';
+                currentChart = createChart('caloriesChart', chartData, label, color, unit);
+                break;
+            case 'resting_hr':
+                chartData = weeklyData.resting_hr;
+                label = '安静時心拍数';
+                color = chartColors.resting_hr;
+                unit = 'bpm';
+                currentChart = createChart('restingHrChart', chartData, label, color, unit);
+                break;
+            case 'max_hr':
+                chartData = weeklyData.max_hr;
+                label = '最大心拍数';
+                color = chartColors.max_hr;
+                unit = 'bpm';
+                currentChart = createChart('maxHrChart', chartData, label, color, unit);
+                break;
+            case 'hrv':
+                chartData = weeklyData.hrv;
+                label = '心拍変動 (HRV)';
+                color = chartColors.hrv;
+                unit = 'ms';
+                currentChart = createChart('hrvChart', chartData, label, color, unit);
+                break;
+        }
+    });
+});
+
+// 戻るボタンのイベント
+document.querySelectorAll('.back-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // 親のクリックイベントを防ぐ
+        
+        const card = this.closest('.metric-card');
+        const metricDisplay = card.querySelector('.metric-display');
+        const chartContainer = card.querySelector('.chart-container');
+        
+        // チャートを破棄
+        if (currentChart) {
+            currentChart.destroy();
+            currentChart = null;
+        }
+        
+        // 表示を元に戻す
+        chartContainer.style.display = 'none';
+        metricDisplay.style.display = 'block';
+    });
+});
+</script>
+{% endif %}
+
 {% endblock %}

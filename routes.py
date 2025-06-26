@@ -158,6 +158,45 @@ def get_fitbit_daily_data(user):
     # データを整理して返す
     return parse_fitbit_data(data)
 
+def get_fitbit_weekly_data(user):
+    """過去7日間のFitbitデータを取得"""
+    weekly_data = {
+        'dates': [],
+        'steps': [],
+        'calories': [],
+        'resting_hr': [],
+        'max_hr': [],
+        'hrv': []
+    }
+    
+    for i in range(7):
+        date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+        weekly_data['dates'].insert(0, date)
+        
+        # 各メトリクスのデータを取得
+        endpoints = {
+            'activities': f'/1/user/-/activities/date/{date}.json',
+            'heart_rate': f'/1/user/-/activities/heart/date/{date}/1d.json',
+            'hrv': f'/1/user/-/hrv/date/{date}.json'
+        }
+        
+        day_data = {}
+        for key, endpoint in endpoints.items():
+            result = make_fitbit_api_request(user, endpoint)
+            if result:
+                day_data[key] = result
+        
+        parsed_day = parse_fitbit_data(day_data)
+        
+        # データを配列に追加
+        weekly_data['steps'].insert(0, parsed_day.get('steps', 0))
+        weekly_data['calories'].insert(0, parsed_day.get('calories_burned', 0))
+        weekly_data['resting_hr'].insert(0, parsed_day.get('resting_heart_rate', None))
+        weekly_data['max_hr'].insert(0, parsed_day.get('max_heart_rate', None))
+        weekly_data['hrv'].insert(0, parsed_day.get('hrv', None))
+    
+    return weekly_data
+
 def generate_health_comment(fitbit_data):
     """Fitbitデータに基づいてAIで健康コメントを生成"""
     if not fitbit_data:
@@ -221,13 +260,15 @@ def index():
     
     # Fitbitデータの取得
     fitbit_data = None
+    weekly_data = None
     health_comment = None
     if user.fitbit_access_token:
         fitbit_data = get_fitbit_daily_data(user)
+        weekly_data = get_fitbit_weekly_data(user)
         if fitbit_data:
             health_comment = generate_health_comment(fitbit_data)
     
-    return render_template('index.html', user=user, fitbit_data=fitbit_data, health_comment=health_comment)
+    return render_template('index.html', user=user, fitbit_data=fitbit_data, weekly_data=weekly_data, health_comment=health_comment)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
