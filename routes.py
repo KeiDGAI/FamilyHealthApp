@@ -32,7 +32,7 @@ def login():
         if user and user.check_password(password):
             session['user_id'] = user.id
             session['username'] = user.username
-            flash(f'{user.name}さん、おかえりなさい！', 'success')
+            flash(f'{user.username}さん、おかえりなさい！', 'success')
             return redirect(url_for('index'))
         else:
             flash('ユーザー名またはパスワードが間違っています。', 'error')
@@ -44,15 +44,12 @@ def register():
     """ユーザー登録ページ"""
     if request.method == 'POST':
         username = request.form.get('username')
-        name = request.form.get('name')
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-        age = request.form.get('age')
-        gender = request.form.get('gender')
         
         # バリデーション
-        if not all([username, name, email, password]):
+        if not all([username, email, password]):
             flash('すべての必須項目を入力してください。', 'error')
             return render_template('register.html')
         
@@ -60,7 +57,7 @@ def register():
             flash('パスワードが一致しません。', 'error')
             return render_template('register.html')
         
-        if len(password) < 6:
+        if password and len(password) < 6:
             flash('パスワードは6文字以上で入力してください。', 'error')
             return render_template('register.html')
         
@@ -74,13 +71,9 @@ def register():
             return render_template('register.html')
         
         # 新規ユーザー作成
-        user = User(
-            username=username,
-            name=name,
-            email=email,
-            age=int(age) if age else None,
-            gender=gender if gender else None
-        )
+        user = User()
+        user.username = username
+        user.email = email
         user.set_password(password)
         
         try:

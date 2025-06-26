@@ -10,7 +10,7 @@
             <div class="card-body text-center">
                 <h1 class="card-title">
                     <i class="fas fa-heart text-danger me-2"></i>
-                    おかえりなさい、{{ user.name }}さん！
+                    おかえりなさい、{{ user.username }}さん！
                 </h1>
                 <p class="card-text text-muted">
                     今日も健康管理を始めましょう
@@ -32,11 +32,6 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-sm-4 fw-bold">お名前:</div>
-                    <div class="col-sm-8">{{ user.name }}</div>
-                </div>
-                <hr>
-                <div class="row">
                     <div class="col-sm-4 fw-bold">ユーザー名:</div>
                     <div class="col-sm-8">{{ user.username }}</div>
                 </div>
@@ -45,25 +40,11 @@
                     <div class="col-sm-4 fw-bold">メール:</div>
                     <div class="col-sm-8">{{ user.email }}</div>
                 </div>
-                {% if user.age %}
                 <hr>
                 <div class="row">
-                    <div class="col-sm-4 fw-bold">年齢:</div>
-                    <div class="col-sm-8">{{ user.age }}歳</div>
+                    <div class="col-sm-4 fw-bold">登録日:</div>
+                    <div class="col-sm-8">{{ user.created_at.strftime('%Y年%m月%d日') }}</div>
                 </div>
-                {% endif %}
-                {% if user.gender %}
-                <hr>
-                <div class="row">
-                    <div class="col-sm-4 fw-bold">性別:</div>
-                    <div class="col-sm-8">
-                        {% if user.gender == 'male' %}男性
-                        {% elif user.gender == 'female' %}女性
-                        {% else %}{{ user.gender }}
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
             </div>
             <div class="card-footer">
                 <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">

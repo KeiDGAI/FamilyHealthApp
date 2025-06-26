@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}プロフィール - 家族健康管理アプリ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    プロフィール情報
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">ユーザー名:</div>
+                    <div class="col-sm-9">{{ user.username }}</div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">メールアドレス:</div>
+                    <div class="col-sm-9">{{ user.email }}</div>
+                </div>
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-bold">登録日:</div>
+                    <div class="col-sm-9">{{ user.created_at.strftime('%Y年%m月%d日 %H:%M') }}</div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>ホームに戻る
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

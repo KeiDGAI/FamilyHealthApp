@@ -10,27 +10,17 @@
                 <div class="text-center mb-4">
                     <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
                     <h2 class="card-title">新規登録</h2>
-                    <p class="text-muted">家族メンバーの情報を登録してください</p>
+                    <p class="text-muted">アカウント情報を登録してください</p>
                 </div>
 
                 <form method="POST">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-user me-1"></i>ユーザー名 <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="username" name="username" required 
-                                   placeholder="ユーザー名（ログイン用）">
-                            <div class="form-text">半角英数字でご入力ください</div>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label for="name" class="form-label">
-                                <i class="fas fa-id-card me-1"></i>お名前 <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="name" name="name" required 
-                                   placeholder="表示名（例：田中太郎）">
-                        </div>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i>ユーザー名 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required 
+                               placeholder="ユーザー名を入力してください">
+                        <div class="form-text">半角英数字でご入力ください</div>
                     </div>
 
                     <div class="mb-3">
@@ -56,28 +46,6 @@
                             </label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required 
                                    placeholder="パスワードを再入力">
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="age" class="form-label">
-                                <i class="fas fa-birthday-cake me-1"></i>年齢
-                            </label>
-                            <input type="number" class="form-control" id="age" name="age" min="0" max="150" 
-                                   placeholder="年齢（任意）">
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">
-                                <i class="fas fa-venus-mars me-1"></i>性別
-                            </label>
-                            <select class="form-select" id="gender" name="gender">
-                                <option value="">選択してください（任意）</option>
-                                <option value="male">男性</option>
-                                <option value="female">女性</option>
-                                <option value="other">その他</option>
-                            </select>
                         </div>
                     </div>
 
