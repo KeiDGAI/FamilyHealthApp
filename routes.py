@@ -264,14 +264,29 @@ def create_test_user():
         app.logger.error(f'Error creating test user: {e}')
         db.session.rollback()
 
+@app.route('/health')
+def health_check():
+    """ヘルスチェック用エンドポイント"""
+    try:
+        # データベース接続テスト
+        User.query.first()
+        return {"status": "ok", "database": "connected"}, 200
+    except Exception as e:
+        app.logger.error(f'Health check failed: {e}')
+        return {"status": "error", "message": str(e)}, 500
+
 @app.route('/')
 def index():
     """ホームページ - ログインチェック"""
-    # テストユーザーを作成
-    create_test_user()
-    
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    try:
+        # テストユーザーを作成
+        create_test_user()
+        
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+    except Exception as e:
+        app.logger.error(f'Index route error: {e}')
+        return f"Application Error: {e}", 500
     
     user = User.query.get(session['user_id'])
     if not user:
