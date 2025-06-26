@@ -249,16 +249,20 @@ def generate_health_comment(fitbit_data):
 # Route handlers
 def create_test_user():
     """テストユーザーを作成（存在しない場合のみ）"""
-    test_user = User.query.filter_by(username='user').first()
-    if not test_user:
-        test_user = User()
-        test_user.username = 'user'
-        test_user.email = 'test@example.com'
-        test_user.set_password('testtest')
-        
-        db.session.add(test_user)
-        db.session.commit()
-        app.logger.info('Test user created: user/testtest')
+    try:
+        test_user = User.query.filter_by(username='user').first()
+        if not test_user:
+            test_user = User()
+            test_user.username = 'user'
+            test_user.email = 'test@example.com'
+            test_user.set_password('testtest')
+            
+            db.session.add(test_user)
+            db.session.commit()
+            app.logger.info('Test user created: user/testtest')
+    except Exception as e:
+        app.logger.error(f'Error creating test user: {e}')
+        db.session.rollback()
 
 @app.route('/')
 def index():
