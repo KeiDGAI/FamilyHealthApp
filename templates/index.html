@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}ホーム - 家族健康管理アプリ{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- ウェルカムメッセージ -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h1 class="card-title">
+                    <i class="fas fa-heart text-danger me-2"></i>
+                    おかえりなさい、{{ user.name }}さん！
+                </h1>
+                <p class="card-text text-muted">
+                    今日も健康管理を始めましょう
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- プロフィール情報 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    プロフィール情報
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">お名前:</div>
+                    <div class="col-sm-8">{{ user.name }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">ユーザー名:</div>
+                    <div class="col-sm-8">{{ user.username }}</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">メール:</div>
+                    <div class="col-sm-8">{{ user.email }}</div>
+                </div>
+                {% if user.age %}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">年齢:</div>
+                    <div class="col-sm-8">{{ user.age }}歳</div>
+                </div>
+                {% endif %}
+                {% if user.gender %}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-4 fw-bold">性別:</div>
+                    <div class="col-sm-8">
+                        {% if user.gender == 'male' %}男性
+                        {% elif user.gender == 'female' %}女性
+                        {% else %}{{ user.gender }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit me-1"></i>プロフィール編集
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 健康管理メニュー -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-heartbeat me-2"></i>
+                    健康管理メニュー
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">健康管理機能は今後追加予定です。</p>
+                
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-weight me-2 text-primary"></i>
+                            体重記録
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">準備中</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-thermometer-half me-2 text-danger"></i>
+                            体温記録
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">準備中</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-heartbeat me-2 text-success"></i>
+                            血圧記録
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">準備中</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-pills me-2 text-warning"></i>
+                            服薬記録
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">準備中</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近の活動 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    最近の活動
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-3"></i>
+                    <p>まだ記録された活動がありません。</p>
+                    <p class="small">健康管理を始めると、ここに最近の記録が表示されます。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

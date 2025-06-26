@@ -1,0 +1,107 @@
+/* カスタムスタイル - Bootstrap のダークテーマに調和 */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* カードのホバーエフェクト */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* アイコンの調整 */
+.fa-heartbeat {
+    animation: heartbeat 2s infinite;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* フォームの見た目向上 */
+.form-control:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* ナビゲーションバーの透明度 */
+.navbar {
+    background-color: rgba(var(--bs-dark-rgb), 0.95) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* アラートのアニメーション */
+.alert {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* プロフィール情報の行間調整 */
+.card-body hr {
+    margin: 0.75rem 0;
+    opacity: 0.3;
+}
+
+/* リストグループアイテムのホバー効果 */
+.list-group-item {
+    transition: background-color 0.2s ease-in-out;
+}
+
+.list-group-item:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* バッジのスタイル調整 */
+.badge {
+    font-size: 0.75em;
+}
+
+/* ボタンのアニメーション */
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* フッターのスタイル */
+footer {
+    border-top: 1px solid rgba(var(--bs-border-color-rgb), 0.3);
+    margin-top: 2rem;
+}
