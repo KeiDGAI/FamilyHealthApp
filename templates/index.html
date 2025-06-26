@@ -136,6 +136,21 @@
                 {% endif %}
                 
                 <small class="text-muted">最終更新: {{ fitbit_data.last_updated }}</small>
+                
+                <!-- AI健康コメント -->
+                {% if health_comment %}
+                <div class="card mt-3 border-info">
+                    <div class="card-header bg-info bg-opacity-10">
+                        <h6 class="card-title mb-0 text-info">
+                            <i class="fas fa-robot me-2"></i>AI健康アドバイス
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text mb-0">{{ health_comment }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
                 {% else %}
                 <div class="alert alert-warning" role="alert">
                     <i class="fas fa-exclamation-triangle me-2"></i>

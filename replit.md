@@ -104,6 +104,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **June 26, 2025**: OpenAI GPT-4o integration for health insights
+  - Added AI-powered health commentary generation
+  - Integrated with Fitbit daily data (steps, calories, heart rate, HRV)
+  - Japanese language health advice using GPT-4o model
+  - Displays personalized encouraging comments below health metrics
+  - Automated refresh with current-day data on each page load
 - **June 26, 2025**: Fitbit OAuth 2.0 integration completed
   - Added Fitbit OAuth routes and database fields
   - Implemented complete OAuth flow with proper security

@@ -5,8 +5,12 @@ from datetime import datetime, timedelta
 import os
 import requests
 import json
+from openai import OpenAI
 from app import app, db
 from models import User
+
+# OpenAI client initialization
+openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Fitbit Data Fetching Functions
 def refresh_fitbit_token(user):
@@ -154,6 +158,55 @@ def get_fitbit_daily_data(user):
     # データを整理して返す
     return parse_fitbit_data(data)
 
+def generate_health_comment(fitbit_data):
+    """Fitbitデータに基づいてAIで健康コメントを生成"""
+    if not fitbit_data:
+        return "今日のデータが取得できませんでした。Fitbitデバイスを確認してください。"
+    
+    # Fitbitデータを要約文字列に変換
+    summary_parts = []
+    
+    if fitbit_data.get('steps', 0) > 0:
+        summary_parts.append(f"歩数: {fitbit_data['steps']:,}歩")
+    
+    if fitbit_data.get('calories_burned', 0) > 0:
+        summary_parts.append(f"消費カロリー: {fitbit_data['calories_burned']:,}kcal")
+    
+    if fitbit_data.get('resting_heart_rate'):
+        summary_parts.append(f"安静時心拍数: {fitbit_data['resting_heart_rate']}bpm")
+    
+    if fitbit_data.get('max_heart_rate'):
+        summary_parts.append(f"最大心拍数: {fitbit_data['max_heart_rate']}bpm")
+    
+    if fitbit_data.get('hrv'):
+        summary_parts.append(f"心拍変動 (HRV): {fitbit_data['hrv']}ms")
+    
+    if not summary_parts:
+        return "今日のデータが不完全です。Fitbitデバイスを確認してください。"
+    
+    fitbit_summary = "、".join(summary_parts)
+    
+    try:
+        # the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+        # do not change this unless explicitly requested by the user
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"ユーザーの運動状況に対して健康寿命の観点でコメントしてください。前向きに活動を続けられるようにするアドバイスを心がけてください。以下がその日のデータです：{fitbit_summary}"
+                }
+            ],
+            max_tokens=300,
+            temperature=0.7
+        )
+        
+        return response.choices[0].message.content
+        
+    except Exception as e:
+        app.logger.error(f'OpenAI API error: {e}')
+        return "健康コメントの生成中にエラーが発生しました。しばらく経ってからもう一度お試しください。"
+
 # Route handlers
 @app.route('/')
 def index():
@@ -168,10 +221,13 @@ def index():
     
     # Fitbitデータの取得
     fitbit_data = None
+    health_comment = None
     if user.fitbit_access_token:
         fitbit_data = get_fitbit_daily_data(user)
+        if fitbit_data:
+            health_comment = generate_health_comment(fitbit_data)
     
-    return render_template('index.html', user=user, fitbit_data=fitbit_data)
+    return render_template('index.html', user=user, fitbit_data=fitbit_data, health_comment=health_comment)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
