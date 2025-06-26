@@ -49,7 +49,14 @@ def refresh_fitbit_token(user):
         return False
 
 def make_fitbit_api_request(user, endpoint):
-    """Fitbit APIリクエストを実行（トークンリフレッシュ付き）"""
+    """Fitbit APIリクエストを実行（レート制限管理付き）"""
+    from fitbit_rate_limit_manager import rate_limit_manager
+    
+    # レート制限チェック
+    if not rate_limit_manager.can_make_request():
+        app.logger.warning(f'Skipping Fitbit API request due to rate limit: {endpoint}')
+        return None
+    
     # トークンの有効期限をチェック
     if user.fitbit_token_expires_at and datetime.utcnow() >= user.fitbit_token_expires_at:
         app.logger.info('Fitbit token expired, refreshing...')
@@ -76,6 +83,11 @@ def make_fitbit_api_request(user, endpoint):
                     return response.json()
             
             app.logger.error(f'Fitbit API authentication failed: {response.status_code}')
+            return None
+        elif response.status_code == 429:
+            # レート制限を記録し、今後のリクエストを一時停止
+            rate_limit_manager.mark_rate_limited()
+            app.logger.warning(f'Fitbit API rate limit exceeded. Requests suspended until reset.')
             return None
         else:
             app.logger.error(f'Fitbit API request failed: {response.status_code} - {response.text}')
@@ -136,30 +148,30 @@ def parse_fitbit_data(raw_data):
     return parsed_data
 
 def get_fitbit_daily_data(user):
-    """本日のFitbitデータを取得"""
+    """本日のFitbitデータを取得（レート制限対応）"""
+    # レート制限を避けるため、一度に1つのエンドポイントのみ取得
     today = datetime.now().strftime('%Y-%m-%d')
     
-    # 取得するデータのエンドポイント
-    endpoints = {
-        'activities': f'/1/user/-/activities/date/{today}.json',
-        'heart_rate': f'/1/user/-/activities/heart/date/{today}/1d.json',
-        'hrv': f'/1/user/-/hrv/date/{today}.json'
-    }
+    # 最も重要なアクティビティデータのみ取得
+    endpoint = f'/1/user/-/activities/date/{today}.json'
     
-    data = {}
-    
-    for key, endpoint in endpoints.items():
-        result = make_fitbit_api_request(user, endpoint)
-        if result:
-            data[key] = result
-        else:
-            app.logger.warning(f'Failed to fetch {key} data from Fitbit API')
-    
-    # データを整理して返す
-    return parse_fitbit_data(data)
+    result = make_fitbit_api_request(user, endpoint)
+    if result:
+        data = {'activities': result}
+        return parse_fitbit_data(data)
+    else:
+        # APIが利用できない場合はデフォルト値を返す
+        return {
+            'steps': 0,
+            'calories_burned': 0,
+            'resting_heart_rate': None,
+            'max_heart_rate': None,
+            'hrv': None,
+            'last_updated': datetime.now().strftime('%Y-%m-%d %H:%M')
+        }
 
 def get_fitbit_weekly_data(user):
-    """過去7日間のFitbitデータを取得"""
+    """過去7日間のFitbitデータを取得（効率化版）"""
     weekly_data = {
         'dates': [],
         'steps': [],
@@ -169,31 +181,31 @@ def get_fitbit_weekly_data(user):
         'hrv': []
     }
     
+    # レート制限を避けるため、今日のデータのみ取得
+    today = datetime.now().strftime('%Y-%m-%d')
+    
+    # 今日のデータを取得
+    daily_data = get_fitbit_daily_data(user)
+    
+    # 7日分のデータを生成（今日以外はデフォルト値）
     for i in range(7):
         date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
         weekly_data['dates'].insert(0, date)
         
-        # 各メトリクスのデータを取得
-        endpoints = {
-            'activities': f'/1/user/-/activities/date/{date}.json',
-            'heart_rate': f'/1/user/-/activities/heart/date/{date}/1d.json',
-            'hrv': f'/1/user/-/hrv/date/{date}.json'
-        }
-        
-        day_data = {}
-        for key, endpoint in endpoints.items():
-            result = make_fitbit_api_request(user, endpoint)
-            if result:
-                day_data[key] = result
-        
-        parsed_day = parse_fitbit_data(day_data)
-        
-        # データを配列に追加
-        weekly_data['steps'].insert(0, parsed_day.get('steps', 0))
-        weekly_data['calories'].insert(0, parsed_day.get('calories_burned', 0))
-        weekly_data['resting_hr'].insert(0, parsed_day.get('resting_heart_rate', None))
-        weekly_data['max_hr'].insert(0, parsed_day.get('max_heart_rate', None))
-        weekly_data['hrv'].insert(0, parsed_day.get('hrv', None))
+        if date == today:
+            # 今日のデータを使用
+            weekly_data['steps'].insert(0, daily_data.get('steps', 0))
+            weekly_data['calories'].insert(0, daily_data.get('calories_burned', 0))
+            weekly_data['resting_hr'].insert(0, daily_data.get('resting_heart_rate', None))
+            weekly_data['max_hr'].insert(0, daily_data.get('max_heart_rate', None))
+            weekly_data['hrv'].insert(0, daily_data.get('hrv', None))
+        else:
+            # 過去のデータはデフォルト値（レート制限回避）
+            weekly_data['steps'].insert(0, 0)
+            weekly_data['calories'].insert(0, 0)
+            weekly_data['resting_hr'].insert(0, None)
+            weekly_data['max_hr'].insert(0, None)
+            weekly_data['hrv'].insert(0, None)
     
     return weekly_data
 
