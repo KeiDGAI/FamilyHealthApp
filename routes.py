@@ -567,10 +567,13 @@ def register():
             
             if family_group:
                 user.group_id = family_group.id
-                if group_action == 'create':
-                    family_group.created_by = user.id
-            
+
             db.session.add(user)
+            db.session.flush()  # Flush to generate user ID before using it
+
+            if family_group and group_action == 'create':
+                family_group.created_by = user.id
+
             db.session.commit()
             
             if group_action == 'create' and family_group:
