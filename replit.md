@@ -124,13 +124,15 @@ Preferred communication style: Simple, everyday language.
   - Japanese language health advice using GPT-4o model
   - Displays personalized encouraging comments below health metrics
   - Automated refresh with current-day data on each page load
-- **June 26, 2025**: Fitbit OAuth 2.0 integration completed
+- **June 26, 2025**: Fitbit OAuth 2.0 integration completed and authentication errors fixed
   - Added Fitbit OAuth routes and database fields
   - Implemented complete OAuth flow with proper security
   - Updated UI to show connection status and controls
   - Added requests-oauthlib dependency for OAuth handling
   - Successfully tested OAuth authentication with real Fitbit account
   - Resolved callback URL configuration issues
+  - Fixed authentication header encoding for token exchange
+  - Improved error handling with detailed diagnostic messages
 - **June 26, 2025**: Simplified user registration form
   - Removed name, age, and gender fields from registration
   - Username now serves as display name

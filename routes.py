@@ -600,18 +600,28 @@ def fitbit_callback():
         return redirect(url_for('index'))
     
     try:
-        # トークン取得
+        # トークン取得 - Fitbit APIの認証方式に合わせて修正
+        import base64
+        
         token_url = 'https://api.fitbit.com/oauth2/token'
+        
+        # Basic認証ヘッダーを正しく作成
+        auth_string = f"{app.config['FITBIT_CLIENT_ID']}:{app.config['FITBIT_CLIENT_SECRET']}"
+        auth_bytes = auth_string.encode('ascii')
+        auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
         
         fitbit = OAuth2Session(
             app.config['FITBIT_CLIENT_ID'],
             redirect_uri=app.config['FITBIT_REDIRECT_URI']
         )
         
+        # カスタムヘッダーでトークンを取得
         token = fitbit.fetch_token(
             token_url,
             code=code,
-            client_secret=app.config['FITBIT_CLIENT_SECRET']
+            client_secret=app.config['FITBIT_CLIENT_SECRET'],
+            include_client_id=True,
+            headers={'Authorization': f'Basic {auth_b64}'}
         )
         
         # ユーザー情報取得
@@ -633,8 +643,20 @@ def fitbit_callback():
             flash('ユーザー情報の取得に失敗しました。', 'error')
     
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         app.logger.error(f'Fitbit OAuth error: {e}')
-        flash('Fitbit認証中にエラーが発生しました。', 'error')
+        app.logger.error(f'Full traceback: {error_details}')
+        
+        # より詳細なエラーメッセージを提供
+        if 'invalid_client' in str(e):
+            flash('Fitbit認証エラー: クライアントIDまたはシークレットが無効です。', 'error')
+        elif 'invalid_grant' in str(e):
+            flash('Fitbit認証エラー: 認証コードが無効または期限切れです。', 'error')
+        elif 'redirect_uri_mismatch' in str(e):
+            flash('Fitbit認証エラー: リダイレクトURIが一致しません。', 'error')
+        else:
+            flash(f'Fitbit認証中にエラーが発生しました: {str(e)[:100]}', 'error')
     
     finally:
         # stateをセッションから削除
