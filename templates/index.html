@@ -149,14 +149,24 @@
                 
                 <!-- AI健康コメント -->
                 {% if health_comment %}
-                <div class="card mt-3 border-info">
+                <div class="card mt-3 border-info ai-comment-card">
                     <div class="card-header bg-info bg-opacity-10">
                         <h6 class="card-title mb-0 text-info">
                             <i class="fas fa-robot me-2"></i>AI健康アドバイス
                         </h6>
                     </div>
-                    <div class="card-body">
-                        <p class="card-text mb-0">{{ health_comment }}</p>
+                    <div class="card-body p-0">
+                        <div class="ai-comment-content" id="aiCommentContent">
+                            <div class="ai-comment-text p-3">
+                                {{ health_comment | replace('\n', '<br>') | safe }}
+                            </div>
+                        </div>
+                        <div class="ai-comment-toggle text-center p-2 border-top" style="display: none;">
+                            <button class="btn btn-sm btn-outline-info" id="toggleCommentBtn">
+                                <span id="toggleText">もっと見る</span>
+                                <i class="fas fa-chevron-down ms-1" id="toggleIcon"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -243,6 +253,42 @@
     </div>
 </div>
 
-
+<script>
+// AI Comment Toggle Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const commentContent = document.getElementById('aiCommentContent');
+    const toggleBtn = document.getElementById('toggleCommentBtn');
+    const toggleText = document.getElementById('toggleText');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const toggleContainer = document.querySelector('.ai-comment-toggle');
+    
+    if (commentContent && toggleBtn) {
+        // Check if content exceeds max height
+        const maxHeight = window.innerWidth <= 576 ? 200 : 300; // Mobile vs desktop
+        const actualHeight = commentContent.scrollHeight;
+        
+        if (actualHeight > maxHeight) {
+            // Show toggle button if content is too long
+            toggleContainer.style.display = 'block';
+            
+            toggleBtn.addEventListener('click', function() {
+                const isExpanded = commentContent.classList.contains('expanded');
+                
+                if (isExpanded) {
+                    // Collapse
+                    commentContent.classList.remove('expanded');
+                    toggleText.textContent = 'もっと見る';
+                    toggleIcon.classList.remove('rotated');
+                } else {
+                    // Expand
+                    commentContent.classList.add('expanded');
+                    toggleText.textContent = '閉じる';
+                    toggleIcon.classList.add('rotated');
+                }
+            });
+        }
+    }
+});
+</script>
 
 {% endblock %}
