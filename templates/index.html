@@ -222,19 +222,25 @@
             </div>
             <div class="card-body">
                 <div class="row text-center">
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-3 col-6 mb-3">
                         <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100">
                             <i class="fas fa-user fa-2x mb-2"></i>
                             <div>プロフィール</div>
                         </a>
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-3 col-6 mb-3">
                         <a href="{{ url_for('group') }}" class="btn btn-outline-success w-100">
                             <i class="fas fa-users fa-2x mb-2"></i>
                             <div>ファミリーグループ</div>
                         </a>
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-3 col-6 mb-3">
+                        <a href="{{ url_for('family') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <div>家族の健康データ</div>
+                        </a>
+                    </div>
+                    <div class="col-lg-2 col-md-3 col-6 mb-3">
                         {% if user.fitbit_access_token %}
                         <a href="{{ url_for('disconnect_fitbit') }}" class="btn btn-outline-danger w-100">
                             <i class="fas fa-unlink fa-2x mb-2"></i>
@@ -247,7 +253,7 @@
                         </a>
                         {% endif %}
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-3 col-6 mb-3">
                         <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary w-100">
                             <i class="fas fa-sign-out-alt fa-2x mb-2"></i>
                             <div>ログアウト</div>

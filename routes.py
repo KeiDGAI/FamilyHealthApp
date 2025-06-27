@@ -450,6 +450,89 @@ def group():
                          family_group=family_group,
                          family_members_data=family_members_data)
 
+@app.route('/family')
+def family():
+    """家族の健康データ一覧ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    if not user.group_id:
+        flash('ファミリーグループに参加していません。', 'warning')
+        return redirect(url_for('group'))
+    
+    family_group = user.family_group
+    family_members_data = []
+    
+    # グループメンバーのデータを取得
+    members = User.query.filter_by(group_id=family_group.id).all()
+    
+    for member in members:
+        member_data = {
+            'user': member,
+            'is_current_user': member.id == user.id,
+            'fitbit_data': None,
+            'health_comment': None
+        }
+        
+        # Fitbitデータを取得
+        if member.fitbit_access_token:
+            member_fitbit_data = get_fitbit_daily_data(member)
+            if member_fitbit_data:
+                member_data['fitbit_data'] = member_fitbit_data
+                # AIコメント生成
+                member_data['health_comment'] = generate_health_comment(member_fitbit_data)
+        
+        family_members_data.append(member_data)
+    
+    return render_template('family.html', 
+                         user=user, 
+                         family_group=family_group,
+                         family_members_data=family_members_data)
+
+@app.route('/family/<int:user_id>')
+def family_member_detail(user_id):
+    """家族メンバーの詳細健康データページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    current_user = User.query.get(session['user_id'])
+    if not current_user:
+        return redirect(url_for('login'))
+    
+    # 対象ユーザーを取得
+    target_user = User.query.get(user_id)
+    if not target_user:
+        flash('ユーザーが見つかりません。', 'error')
+        return redirect(url_for('family'))
+    
+    # 同じグループのメンバーかチェック
+    if not current_user.can_view_user_data(user_id):
+        flash('このユーザーのデータを閲覧する権限がありません。', 'error')
+        return redirect(url_for('family'))
+    
+    # Fitbitデータを取得
+    fitbit_data = None
+    weekly_data = None
+    health_comment = None
+    
+    if target_user.fitbit_access_token:
+        fitbit_data = get_fitbit_daily_data(target_user)
+        weekly_data = get_fitbit_weekly_data(target_user)
+        if fitbit_data:
+            health_comment = generate_health_comment(fitbit_data)
+    
+    return render_template('family_member_detail.html', 
+                         user=target_user,
+                         current_user=current_user,
+                         fitbit_data=fitbit_data,
+                         weekly_data=weekly_data,
+                         health_comment=health_comment,
+                         is_viewing_other=True)
+
 @app.route('/group/leave', methods=['POST'])
 def leave_group():
     """ファミリーグループから脱退"""
