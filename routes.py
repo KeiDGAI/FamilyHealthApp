@@ -341,6 +341,40 @@ def generate_health_comment(fitbit_data):
         return "健康コメントの生成中にエラーが発生しました。しばらく経ってからもう一度お試しください。"
 
 # Route handlers
+def get_family_members_with_data(user, limit=None):
+    """家族メンバーの健康データを効率的に取得"""
+    if not user.group_id:
+        return []
+    
+    # グループメンバーを取得
+    query = User.query.filter_by(group_id=user.group_id)
+    if limit:
+        query = query.limit(limit)
+    
+    members = query.all()
+    family_members_data = []
+    
+    for member in members:
+        member_data = {
+            'user': member,
+            'is_current_user': member.id == user.id,
+            'fitbit_data': None,
+            'health_comment': None
+        }
+        
+        # Fitbitデータを取得
+        if member.fitbit_access_token:
+            member_fitbit_data = get_fitbit_daily_data(member)
+            if member_fitbit_data:
+                member_data['fitbit_data'] = member_fitbit_data
+                # AIコメント生成（必要に応じて）
+                if not limit or len(family_members_data) < 5:  # 詳細表示時のみAIコメント生成
+                    member_data['health_comment'] = generate_health_comment(member_fitbit_data)
+        
+        family_members_data.append(member_data)
+    
+    return family_members_data
+
 def create_test_user():
     """テストユーザーを作成（存在しない場合のみ）"""
     try:

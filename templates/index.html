@@ -94,46 +94,83 @@
             </div>
             <div class="card-body">
                 <div class="row">
+                    {% set displayed_count = 0 %}
                     {% for member_data in family_members_data %}
-                    {% if not member_data.is_current_user %}
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card h-100">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">
-                                    <i class="fas fa-user me-1"></i>
-                                    {{ member_data.user.username }}
-                                </h6>
-                                {% if member_data.user.fitbit_access_token %}
-                                <i class="fas fa-check-circle text-success" title="Fitbit連携済み"></i>
-                                {% else %}
-                                <i class="fas fa-minus-circle text-muted" title="Fitbit未連携"></i>
-                                {% endif %}
-                            </div>
-                            <div class="card-body p-2">
-                                {% if member_data.fitbit_data %}
-                                <div class="row g-1 text-center">
-                                    <div class="col-6">
-                                        <small class="text-muted">歩数</small>
-                                        <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.steps) }}</div>
-                                    </div>
-                                    <div class="col-6">
-                                        <small class="text-muted">カロリー</small>
-                                        <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.calories_burned) }}</div>
-                                    </div>
+                    {% if not member_data.is_current_user and displayed_count < 4 %}
+                    {% set displayed_count = displayed_count + 1 %}
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <a href="{{ url_for('family_member_detail', user_id=member_data.user.id) }}" class="text-decoration-none">
+                            <div class="card h-100 family-member-card" style="cursor: pointer; transition: transform 0.2s;">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ member_data.user.username }}
+                                    </h6>
+                                    {% if member_data.user.fitbit_access_token %}
+                                    <i class="fas fa-check-circle text-success" title="Fitbit連携済み"></i>
+                                    {% else %}
+                                    <i class="fas fa-minus-circle text-muted" title="Fitbit未連携"></i>
+                                    {% endif %}
                                 </div>
-                                {% else %}
-                                <p class="text-muted small mb-0">データなし</p>
-                                {% endif %}
+                                <div class="card-body p-2">
+                                    {% if member_data.fitbit_data %}
+                                    <div class="row g-1 text-center">
+                                        <div class="col-6">
+                                            <small class="text-muted">歩数</small>
+                                            <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.steps) }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">カロリー</small>
+                                            <div class="fw-bold">{{ "{:,}".format(member_data.fitbit_data.calories_burned) }}</div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted small mb-0">データなし</p>
+                                    {% endif %}
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     {% endif %}
                     {% endfor %}
+                    
+                    <!-- 家族一覧を見るボタン -->
+                    {% if family_members_data|length > 5 %}
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <a href="{{ url_for('family') }}" class="text-decoration-none">
+                            <div class="card h-100 d-flex align-items-center justify-content-center" style="cursor: pointer; border: 2px dashed rgba(0,0,0,0.2);">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-plus-circle fa-2x text-muted mb-2"></i>
+                                    <p class="mb-1 text-muted">もっと見る</p>
+                                    <small class="text-muted">{{ family_members_data|length - 1 }}人中{{ displayed_count }}人表示</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- 家族一覧を見るボタン（下部） -->
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('family') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-1"></i>家族一覧を見る
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.family-member-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.family-member-card .card-header {
+    font-size: 0.9rem;
+}
+</style>
 {% endif %}
 
 <!-- 健康管理メニュー -->
