@@ -210,48 +210,50 @@
     </div>
 </div>
 
-<!-- アカウント・グループ管理 -->
+<!-- クイックアクセス -->
 <div class="row mb-4">
-    <div class="col-md-6 mb-4">
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-user me-2"></i>
-                    アカウント管理
+                    <i class="fas fa-bolt me-2"></i>
+                    クイックアクセス
                 </h5>
             </div>
             <div class="card-body">
-                <p class="mb-2"><strong>ユーザー名:</strong> {{ user.username }}</p>
-                <p class="mb-3"><strong>メール:</strong> {{ user.email }}</p>
-                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-edit me-1"></i>プロフィール編集
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-users me-2"></i>
-                    ファミリーグループ
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if family_group %}
-                <p class="mb-2"><strong>グループ:</strong> {{ family_group.name }}</p>
-                <p class="mb-2"><strong>招待コード:</strong> <span class="badge bg-primary">{{ family_group.invite_code }}</span></p>
-                <p class="mb-3"><strong>メンバー:</strong> {{ family_members_data|length }}人</p>
-                <a href="{{ url_for('leave_group') }}" class="btn btn-outline-warning">
-                    <i class="fas fa-sign-out-alt me-1"></i>グループから脱退
-                </a>
-                {% else %}
-                <p class="text-muted mb-3">グループに参加していません</p>
-                <a href="{{ url_for('join_group') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-plus me-1"></i>グループに参加
-                </a>
-                {% endif %}
+                <div class="row text-center">
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user fa-2x mb-2"></i>
+                            <div>プロフィール</div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{{ url_for('group') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <div>ファミリーグループ</div>
+                        </a>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        {% if user.fitbit_access_token %}
+                        <a href="{{ url_for('disconnect_fitbit') }}" class="btn btn-outline-danger w-100">
+                            <i class="fas fa-unlink fa-2x mb-2"></i>
+                            <div>Fitbit連携解除</div>
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('connect_fitbit') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-link fa-2x mb-2"></i>
+                            <div>Fitbit連携</div>
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-sign-out-alt fa-2x mb-2"></i>
+                            <div>ログアウト</div>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

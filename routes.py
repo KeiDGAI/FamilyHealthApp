@@ -412,6 +412,44 @@ def index():
                          family_members_data=family_members_data,
                          family_group=user.family_group if user.group_id else None)
 
+@app.route('/group')
+def group():
+    """ファミリーグループ管理ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    family_group = user.family_group if user.group_id else None
+    family_members_data = []
+    
+    if family_group:
+        # グループメンバーのデータを取得
+        members = User.query.filter_by(group_id=family_group.id).all()
+        
+        for member in members:
+            member_data = {
+                'user': member,
+                'is_current_user': member.id == user.id,
+                'fitbit_data': None,
+                'health_comment': None
+            }
+            
+            # Fitbitデータを取得
+            if member.fitbit_access_token:
+                member_fitbit_data = get_fitbit_daily_data(member)
+                if member_fitbit_data:
+                    member_data['fitbit_data'] = member_fitbit_data
+            
+            family_members_data.append(member_data)
+    
+    return render_template('group.html', 
+                         user=user, 
+                         family_group=family_group,
+                         family_members_data=family_members_data)
+
 @app.route('/group/leave', methods=['POST'])
 def leave_group():
     """ファミリーグループから脱退"""
