@@ -440,28 +440,8 @@ def index():
         if fitbit_data:
             health_comment = generate_health_comment(fitbit_data)
     
-    # ファミリーグループメンバーのデータを取得
-    family_members_data = []
-    if user.group_id:
-        family_group = user.family_group
-        all_members = User.query.filter_by(group_id=user.group_id).all()
-        
-        for member in all_members:
-            member_data = {
-                'user': member,
-                'fitbit_data': None,
-                'health_comment': None,
-                'is_current_user': member.id == user.id
-            }
-            
-            if member.fitbit_access_token:
-                member_fitbit_data = get_fitbit_daily_data(member)
-                if member_fitbit_data:
-                    member_data['fitbit_data'] = member_fitbit_data
-                    # Generate health comment for family members too
-                    member_data['health_comment'] = generate_health_comment(member_fitbit_data)
-            
-            family_members_data.append(member_data)
+    # ファミリーグループメンバーのデータを取得（最初の5人まで、ホーム画面用）
+    family_members_data = get_family_members_with_data(user, limit=5)
     
     return render_template('index.html', 
                          user=user, 
@@ -524,28 +504,7 @@ def family():
         return redirect(url_for('group'))
     
     family_group = user.family_group
-    family_members_data = []
-    
-    # グループメンバーのデータを取得
-    members = User.query.filter_by(group_id=family_group.id).all()
-    
-    for member in members:
-        member_data = {
-            'user': member,
-            'is_current_user': member.id == user.id,
-            'fitbit_data': None,
-            'health_comment': None
-        }
-        
-        # Fitbitデータを取得
-        if member.fitbit_access_token:
-            member_fitbit_data = get_fitbit_daily_data(member)
-            if member_fitbit_data:
-                member_data['fitbit_data'] = member_fitbit_data
-                # AIコメント生成
-                member_data['health_comment'] = generate_health_comment(member_fitbit_data)
-        
-        family_members_data.append(member_data)
+    family_members_data = get_family_members_with_data(user)
     
     return render_template('family.html', 
                          user=user, 
