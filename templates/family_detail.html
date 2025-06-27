@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}{{ target_user.username }}の詳細健康データ - 家族健康管理アプリ{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            
+            <!-- ページヘッダー -->
+            <div class="d-flex align-items-center mb-4">
+                <a href="{{ url_for('family') }}" class="btn btn-outline-secondary me-3">
+                    <i class="fas fa-arrow-left"></i> 家族一覧へ戻る
+                </a>
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-user-circle me-2"></i>
+                        {{ target_user.username }}さんの健康データ
+                    </h2>
+                    <p class="text-muted mb-0">{{ target_user.created_at.strftime('%Y年%m月') }}からメンバー</p>
+                </div>
+            </div>
+
+            {% if fitbit_data %}
+            <!-- 今日の健康データ概要 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-calendar-day me-2"></i>
+                                今日の健康データ
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="metric-display p-3">
+                                        <i class="fas fa-walking fa-3x text-primary mb-2"></i>
+                                        <h3 class="mb-1">{{ "{:,}".format(fitbit_data.steps) }}</h3>
+                                        <p class="text-muted mb-0">歩数</p>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="metric-display p-3">
+                                        <i class="fas fa-fire fa-3x text-danger mb-2"></i>
+                                        <h3 class="mb-1">{{ "{:,}".format(fitbit_data.calories_burned) }}</h3>
+                                        <p class="text-muted mb-0">消費カロリー</p>
+                                    </div>
+                                </div>
+                                {% if fitbit_data.resting_heart_rate %}
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="metric-display p-3">
+                                        <i class="fas fa-heartbeat fa-3x text-info mb-2"></i>
+                                        <h3 class="mb-1">{{ fitbit_data.resting_heart_rate }}</h3>
+                                        <p class="text-muted mb-0">安静時心拍数 (bpm)</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if fitbit_data.hrv %}
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <div class="metric-display p-3">
+                                        <i class="fas fa-chart-line fa-3x text-success mb-2"></i>
+                                        <h3 class="mb-1">{{ "%.1f"|format(fitbit_data.hrv) }}</h3>
+                                        <p class="text-muted mb-0">心拍変動 (HRV)</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>
+                                <i class="fas fa-clock me-1"></i>
+                                最終更新: 今日
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI健康コメント -->
+            {% if health_comment %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-robot me-2"></i>
+                                AI健康アドバイス
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-0">
+                                <p class="mb-0">{{ health_comment }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 7日間推移グラフ -->
+            {% if weekly_data %}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                7日間の健康データ推移
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- グラフ選択タブ -->
+                            <ul class="nav nav-tabs mb-3" id="chartTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="steps-tab" data-bs-toggle="tab" data-bs-target="#steps-chart" type="button" role="tab">
+                                        <i class="fas fa-walking me-1"></i>歩数
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="calories-tab" data-bs-toggle="tab" data-bs-target="#calories-chart" type="button" role="tab">
+                                        <i class="fas fa-fire me-1"></i>カロリー
+                                    </button>
+                                </li>
+                                {% if weekly_data.has_heart_rate_data %}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="heart-rate-tab" data-bs-toggle="tab" data-bs-target="#heart-rate-chart" type="button" role="tab">
+                                        <i class="fas fa-heartbeat me-1"></i>心拍数
+                                    </button>
+                                </li>
+                                {% endif %}
+                            </ul>
+
+                            <!-- グラフコンテンツ -->
+                            <div class="tab-content" id="chartTabContent">
+                                <!-- 歩数グラフ -->
+                                <div class="tab-pane fade show active" id="steps-chart" role="tabpanel">
+                                    <div class="chart-container-large">
+                                        <canvas id="stepsChart"></canvas>
+                                    </div>
+                                </div>
+                                
+                                <!-- カロリーグラフ -->
+                                <div class="tab-pane fade" id="calories-chart" role="tabpanel">
+                                    <div class="chart-container-large">
+                                        <canvas id="caloriesChart"></canvas>
+                                    </div>
+                                </div>
+                                
+                                <!-- 心拍数グラフ -->
+                                {% if weekly_data.has_heart_rate_data %}
+                                <div class="tab-pane fade" id="heart-rate-chart" role="tabpanel">
+                                    <div class="chart-container-large">
+                                        <canvas id="heartRateChart"></canvas>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 週間統計情報 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-pie me-2"></i>
+                                週間統計サマリー
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="weekly-stat p-3">
+                                        <h4 class="text-primary mb-1">{{ "{:,}".format(weekly_data.total_steps) }}</h4>
+                                        <p class="mb-1">週間総歩数</p>
+                                        <small class="text-muted">平均: {{ "{:,}".format(weekly_data.avg_steps) }}歩/日</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="weekly-stat p-3">
+                                        <h4 class="text-danger mb-1">{{ "{:,}".format(weekly_data.total_calories) }}</h4>
+                                        <p class="mb-1">週間総カロリー</p>
+                                        <small class="text-muted">平均: {{ "{:,}".format(weekly_data.avg_calories) }}kcal/日</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="weekly-stat p-3">
+                                        <h4 class="text-success mb-1">{{ weekly_data.active_days }}</h4>
+                                        <p class="mb-1">活動日数</p>
+                                        <small class="text-muted">7日中</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-6 mb-3">
+                                    <div class="weekly-stat p-3">
+                                        <h4 class="text-info mb-1">{{ "{:,}".format(weekly_data.max_steps) }}</h4>
+                                        <p class="mb-1">最大歩数</p>
+                                        <small class="text-muted">最高記録</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <!-- Fitbitデータがない場合 -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                            <h4>健康データがありません</h4>
+                            {% if not target_user.fitbit_access_token %}
+                            <p class="text-muted">{{ target_user.username }}さんはまだFitbitと連携していません。</p>
+                            {% else %}
+                            <p class="text-muted">データを取得中です。しばらくお待ちください。</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ユーザー基本情報 -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                基本情報
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <strong>ユーザー名:</strong> {{ target_user.username }}
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <strong>メンバー登録日:</strong> {{ target_user.created_at.strftime('%Y年%m月%d日') }}
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <strong>Fitbit連携:</strong>
+                                    {% if target_user.fitbit_access_token %}
+                                    <span class="badge bg-success">連携済み</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">未連携</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                詳細チャート
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if fitbit_data %}
+                            <p class="text-muted mb-3">より詳細なチャートを表示できます。</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('chart_view', metric='steps') }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-walking me-1"></i>歩数の詳細チャート
+                                </a>
+                                <a href="{{ url_for('chart_view', metric='calories') }}" class="btn btn-outline-danger">
+                                    <i class="fas fa-fire me-1"></i>カロリーの詳細チャート
+                                </a>
+                            </div>
+                            {% else %}
+                            <p class="text-muted mb-0">Fitbitデータが必要です。</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ナビゲーション -->
+            <div class="row">
+                <div class="col-12 text-center">
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{{ url_for('family') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>家族一覧に戻る
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-1"></i>ホーム
+                        </a>
+                        <a href="{{ url_for('group') }}" class="btn btn-outline-success">
+                            <i class="fas fa-users me-1"></i>グループ管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.metric-display {
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02));
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.weekly-stat {
+    border-radius: 8px;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.chart-container-large {
+    position: relative;
+    height: 400px;
+    margin: 20px 0;
+}
+
+.nav-tabs .nav-link {
+    color: var(--bs-body-color);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+</style>
+
+{% if weekly_data %}
+<script>
+// グラフデータの準備
+const weeklyData = {
+    labels: {{ weekly_data.dates | tojsonfilter | safe }},
+    steps: {{ weekly_data.steps_data | tojsonfilter | safe }},
+    calories: {{ weekly_data.calories_data | tojsonfilter | safe }},
+    {% if weekly_data.has_heart_rate_data %}
+    heartRate: {{ weekly_data.heart_rate_data | tojsonfilter | safe }}
+    {% endif %}
+};
+
+// 共通のチャート設定
+const commonConfig = {
+    type: 'bar',
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            }
+        }
+    }
+};
+
+// 歩数グラフ
+const stepsChart = new Chart(document.getElementById('stepsChart'), {
+    ...commonConfig,
+    data: {
+        labels: weeklyData.labels,
+        datasets: [{
+            label: '歩数',
+            data: weeklyData.steps,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 2
+        }]
+    }
+});
+
+// カロリーグラフ
+const caloriesChart = new Chart(document.getElementById('caloriesChart'), {
+    ...commonConfig,
+    data: {
+        labels: weeklyData.labels,
+        datasets: [{
+            label: '消費カロリー',
+            data: weeklyData.calories,
+            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 2
+        }]
+    }
+});
+
+{% if weekly_data.has_heart_rate_data %}
+// 心拍数グラフ
+const heartRateChart = new Chart(document.getElementById('heartRateChart'), {
+    type: 'line',
+    data: {
+        labels: weeklyData.labels,
+        datasets: [{
+            label: '安静時心拍数',
+            data: weeklyData.heartRate,
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 2,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// タブ切り替え時のグラフリサイズ
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(button => {
+    button.addEventListener('shown.bs.tab', function (e) {
+        setTimeout(() => {
+            Chart.helpers.each(Chart.instances, function(instance) {
+                instance.resize();
+            });
+        }, 100);
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -228,20 +228,23 @@ def get_fitbit_weekly_data(user):
     """過去7日間のFitbitデータを取得（キャッシュ機能付き）"""
     from models import FitbitData
     
-    weekly_data = {
-        'dates': [],
-        'steps': [],
-        'calories': [],
-        'resting_hr': [],
-        'max_hr': [],
-        'hrv': []
-    }
+    # データ収集用の配列
+    dates = []
+    steps_data = []
+    calories_data = []
+    heart_rate_data = []
+    has_heart_rate_data = False
+    
+    total_steps = 0
+    total_calories = 0
+    active_days = 0
+    max_steps = 0
     
     # 過去7日間のデータを取得
     for i in range(7):
         date_obj = datetime.now().date() - timedelta(days=i)
-        date_str = date_obj.strftime('%Y-%m-%d')
-        weekly_data['dates'].insert(0, date_str)
+        date_str = date_obj.strftime('%m/%d')
+        dates.insert(0, date_str)
         
         # データベースからキャッシュされたデータを取得
         cached_data = FitbitData.query.filter_by(
@@ -251,20 +254,42 @@ def get_fitbit_weekly_data(user):
         
         if cached_data:
             # キャッシュされたデータを使用
-            weekly_data['steps'].insert(0, cached_data.steps or 0)
-            weekly_data['calories'].insert(0, cached_data.calories_burned or 0)
-            weekly_data['resting_hr'].insert(0, cached_data.resting_heart_rate)
-            weekly_data['max_hr'].insert(0, cached_data.max_heart_rate)
-            weekly_data['hrv'].insert(0, cached_data.hrv)
+            steps = cached_data.steps or 0
+            calories = cached_data.calories_burned or 0
+            heart_rate = cached_data.resting_heart_rate
+            
+            steps_data.insert(0, steps)
+            calories_data.insert(0, calories)
+            heart_rate_data.insert(0, heart_rate)
+            
+            # 統計計算
+            total_steps += steps
+            total_calories += calories
+            if steps > 0:
+                active_days += 1
+            if steps > max_steps:
+                max_steps = steps
+            if heart_rate is not None:
+                has_heart_rate_data = True
         else:
             # キャッシュがない場合はデフォルト値
-            weekly_data['steps'].insert(0, 0)
-            weekly_data['calories'].insert(0, 0)
-            weekly_data['resting_hr'].insert(0, None)
-            weekly_data['max_hr'].insert(0, None)
-            weekly_data['hrv'].insert(0, None)
+            steps_data.insert(0, 0)
+            calories_data.insert(0, 0)
+            heart_rate_data.insert(0, None)
     
-    return weekly_data
+    return {
+        'dates': dates,
+        'steps_data': steps_data,
+        'calories_data': calories_data,
+        'heart_rate_data': heart_rate_data,
+        'has_heart_rate_data': has_heart_rate_data,
+        'total_steps': total_steps,
+        'total_calories': total_calories,
+        'active_days': active_days,
+        'avg_steps': total_steps // 7 if total_steps > 0 else 0,
+        'avg_calories': total_calories // 7 if total_calories > 0 else 0,
+        'max_steps': max_steps
+    }
 
 def generate_health_comment(fitbit_data):
     """Fitbitデータに基づいてAIで健康コメントを生成"""
@@ -525,8 +550,8 @@ def family_member_detail(user_id):
         if fitbit_data:
             health_comment = generate_health_comment(fitbit_data)
     
-    return render_template('family_member_detail.html', 
-                         user=target_user,
+    return render_template('family_detail.html', 
+                         target_user=target_user,
                          current_user=current_user,
                          fitbit_data=fitbit_data,
                          weekly_data=weekly_data,
