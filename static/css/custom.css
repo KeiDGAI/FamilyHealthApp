@@ -307,3 +307,162 @@ footer {
         padding: 0.3rem 0.8rem;
     }
 }
+
+/* 家族カードスタイル */
+.family-member-card {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.125);
+}
+
+.family-member-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: var(--bs-primary);
+}
+
+.family-member-card .card-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* 家族一覧レスポンシブグリッド */
+.family-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 576px) {
+    .family-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    .family-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+    .family-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 993px) and (max-width: 1400px) {
+    .family-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1401px) {
+    .family-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* メトリクス表示の改善 */
+.metric-display {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02));
+    border: 1px solid rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.metric-box {
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.02);
+    margin-bottom: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.metric-box:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+/* 週間統計 */
+.weekly-stat {
+    padding: 1.5rem;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.weekly-stat:hover {
+    background: rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+}
+
+/* グループ統計ボックス */
+.statistic-box {
+    padding: 1.5rem;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02));
+    border: 1px solid rgba(0,0,0,0.08);
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.statistic-box:hover {
+    background: linear-gradient(135deg, rgba(0,0,0,0.08), rgba(0,0,0,0.04));
+    transform: translateY(-2px);
+}
+
+/* ナビゲーションタブの改善 */
+.nav-tabs .nav-link {
+    color: var(--bs-body-color);
+    border-radius: 6px 6px 0 0;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--bs-primary);
+    color: white;
+    border-color: var(--bs-primary);
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: var(--bs-primary);
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* クイックアクセスボタン */
+.quick-access-btn {
+    transition: all 0.2s ease;
+}
+
+.quick-access-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* アニメーション */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 家族グリッドアイテムの順次表示 */
+.family-grid .card:nth-child(1) { animation: fadeInUp 0.6s ease-out 0.1s both; }
+.family-grid .card:nth-child(2) { animation: fadeInUp 0.6s ease-out 0.2s both; }
+.family-grid .card:nth-child(3) { animation: fadeInUp 0.6s ease-out 0.3s both; }
+.family-grid .card:nth-child(4) { animation: fadeInUp 0.6s ease-out 0.4s both; }
+.family-grid .card:nth-child(5) { animation: fadeInUp 0.6s ease-out 0.5s both; }
+.family-grid .card:nth-child(6) { animation: fadeInUp 0.6s ease-out 0.6s both; }
+.family-grid .card:nth-child(7) { animation: fadeInUp 0.6s ease-out 0.7s both; }
+.family-grid .card:nth-child(8) { animation: fadeInUp 0.6s ease-out 0.8s both; }

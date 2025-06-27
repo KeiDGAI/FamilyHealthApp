@@ -15,11 +15,10 @@
 
             {% if family_members_data %}
             <!-- 家族メンバーの健康データ一覧 -->
-            <div class="row">
+            <div class="family-grid">
                 {% for member_data in family_members_data %}
-                <div class="col-lg-6 col-xl-4 mb-4">
-                    <a href="{{ url_for('family_member_detail', user_id=member_data.user.id) }}" class="text-decoration-none">
-                        <div class="card h-100 member-card {% if member_data.is_current_user %}border-primary{% endif %}" style="cursor: pointer; transition: transform 0.2s;">
+                <a href="{{ url_for('family_member_detail', user_id=member_data.user.id) }}" class="text-decoration-none">
+                    <div class="card h-100 family-member-card {% if member_data.is_current_user %}border-primary{% endif %}">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">
                                     <i class="fas fa-user-circle me-2"></i>
@@ -114,9 +113,8 @@
                                     {% endif %}
                                 </small>
                             </div>
-                        </div>
-                    </a>
-                </div>
+                    </div>
+                </a>
                 {% endfor %}
             </div>
 
@@ -203,27 +201,5 @@
     </div>
 </div>
 
-<style>
-.member-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-}
 
-.metric-box {
-    padding: 10px;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.02);
-    margin-bottom: 5px;
-}
-
-.statistic-box {
-    padding: 15px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02));
-}
-
-.card-header h5 {
-    font-weight: 600;
-}
-</style>
 {% endblock %}
