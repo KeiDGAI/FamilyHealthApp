@@ -492,6 +492,27 @@ def group():
 @app.route('/family')
 def family():
     """家族の健康データ一覧ページ"""
+    # デモモードチェック
+    if app.config.get('USE_DEMO_DATA', False):
+        from demo_data import get_demo_data, get_demo_family_stats
+        
+        # デモデータを使用
+        demo_members = get_demo_data()
+        demo_stats = get_demo_family_stats()
+        
+        # デモ用の家族グループ情報
+        demo_family_group = {
+            'name': 'デモ家族',
+            'invite_code': 'DEMO1234'
+        }
+        
+        return render_template('family_demo.html',
+                             family_group=demo_family_group,
+                             family_members_data=demo_members,
+                             stats=demo_stats,
+                             demo_mode=True)
+    
+    # 通常モード（実データ）
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
@@ -506,10 +527,11 @@ def family():
     family_group = user.family_group
     family_members_data = get_family_members_with_data(user)
     
-    return render_template('family.html', 
+    return render_template('family_demo.html', 
                          user=user, 
                          family_group=family_group,
-                         family_members_data=family_members_data)
+                         family_members_data=family_members_data,
+                         demo_mode=False)
 
 @app.route('/family/<int:user_id>')
 def family_member_detail(user_id):

@@ -38,6 +38,9 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_pre_ping": True,
 }
 
+# デモモード設定（本番環境では False に変更）
+app.config['USE_DEMO_DATA'] = os.environ.get('USE_DEMO_DATA', 'True').lower() == 'true'
+
 # データベース初期化
 db.init_app(app)
 
