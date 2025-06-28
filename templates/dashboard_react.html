@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}React Health Dashboard - 家族健康管理アプリ{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  .circular-progress {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .circular-progress svg {
+    transform: rotate(-90deg);
+  }
+  
+  .circular-progress .progress-text {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .metric-box {
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .family-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .family-member-card {
+    transition: all 0.3s ease;
+    border: 1px solid var(--bs-border-color);
+  }
+  
+  .family-member-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  }
+  
+  .statistic-box {
+    text-align: center;
+    padding: 1rem;
+  }
+  
+  .progress-bar-animated {
+    transition: width 0.5s ease-in-out;
+  }
+  
+  .react-dashboard {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+    min-height: 100vh;
+    color: white;
+  }
+  
+  .glass-card {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+  }
+  
+  .gradient-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  }
+  
+  .gradient-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="react-dashboard-root" class="react-dashboard p-4"></div>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+const { createRoot } = ReactDOM;
+
+// Utility functions
+const healthUtils = {
+  getStepsLevel: (steps) => {
+    if (steps < 5000) return 'low';
+    if (steps < 8000) return 'moderate';
+    if (steps < 10000) return 'good';
+    return 'excellent';
+  },
+  
+  getStatusColor: (status) => {
+    switch(status) {
+      case 'excellent': return 'bg-success';
+      case 'good': return 'bg-primary';
+      case 'active': return 'bg-info';
+      case 'warning': return 'bg-warning';
+      default: return 'bg-secondary';
+    }
+  }
+};
+
+const formatNumber = (num) => {
+  return new Intl.NumberFormat('ja-JP').format(num);
+};
+
+// Circular Progress Component
+const CircularProgress = ({ percentage, size = 120, strokeWidth = 8, color = '#3b82f6' }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return React.createElement('div', 
+    { className: 'circular-progress', style: { width: size, height: size } },
+    React.createElement('svg', 
+      { width: size, height: size },
+      React.createElement('circle', {
+        cx: size / 2,
+        cy: size / 2,
+        r: radius,
+        stroke: '#374151',
+        strokeWidth: strokeWidth,
+        fill: 'none'
+      }),
+      React.createElement('circle', {
+        cx: size / 2,
+        cy: size / 2,
+        r: radius,
+        stroke: color,
+        strokeWidth: strokeWidth,
+        fill: 'none',
+        strokeDasharray: strokeDasharray,
+        strokeDashoffset: strokeDashoffset,
+        strokeLinecap: 'round',
+        style: { transition: 'stroke-dashoffset 0.5s ease-in-out' }
+      })
+    ),
+    React.createElement('div', 
+      { className: 'progress-text' },
+      `${Math.round(percentage)}%`
+    )
+  );
+};
+
+// Health Dashboard Component
+const FamilyHealthDashboard = () => {
+  const [selectedMember, setSelectedMember] = useState('me');
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [todayStats, setTodayStats] = useState(null);
+  const [familyStats, setFamilyStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Mock data for demonstration
+  const defaultFamilyMembers = [
+    { id: 'me', username: 'もえ', avatar: '👧', status: 'excellent', todayScore: 92, isCurrentUser: true },
+    { id: 'mom', username: 'すずこ', avatar: '👩', status: 'good', todayScore: 87 },
+    { id: 'dad', username: 'なおひさ', avatar: '👨', status: 'active', todayScore: 75 }
+  ];
+
+  const defaultTodayStats = {
+    steps: { current: 8542, target: 10000, percentage: 85 },
+    calories: { current: 320, target: 400, percentage: 80 },
+    heartRate: { current: 72, status: 'normal' },
+    activeMinutes: { current: 45, target: 60, percentage: 75 }
+  };
+
+  const defaultFamilyStats = {
+    total_steps: 26392,
+    total_calories: 6600,
+    avg_steps: 8797,
+    member_count: 3,
+    active_members: 3
+  };
+
+  useEffect(() => {
+    // Simulate API call delay
+    setTimeout(() => {
+      setFamilyMembers(defaultFamilyMembers);
+      setTodayStats(defaultTodayStats);
+      setFamilyStats(defaultFamilyStats);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  if (loading) {
+    return React.createElement('div', 
+      { className: 'text-center py-5' },
+      React.createElement('div', { className: 'spinner-border text-primary', role: 'status' }),
+      React.createElement('p', { className: 'mt-3 text-light' }, '健康データを読み込み中...')
+    );
+  }
+
+  if (error) {
+    return React.createElement('div', 
+      { className: 'alert alert-danger text-center' },
+      error
+    );
+  }
+
+  return React.createElement('div', 
+    { className: 'container-fluid' },
+    
+    // Header
+    React.createElement('div', 
+      { className: 'row mb-4' },
+      React.createElement('div', 
+        { className: 'col-12' },
+        React.createElement('div', 
+          { className: 'd-flex justify-content-between align-items-center' },
+          React.createElement('div', null,
+            React.createElement('h1', { className: 'h2 text-light mb-1' }, 'おかえりなさい！'),
+            React.createElement('p', { className: 'text-light-emphasis' }, '今日も一緒に健康になりましょう')
+          ),
+          React.createElement('div', 
+            { className: 'd-flex align-items-center' },
+            React.createElement('div', 
+              { className: 'position-relative me-3' },
+              React.createElement('div', 
+                { 
+                  className: 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success',
+                  style: { width: '12px', height: '12px' }
+                }
+              ),
+              React.createElement('i', { className: 'bi bi-gear fs-5 text-light' })
+            )
+          )
+        )
+      )
+    ),
+
+    // Family Members Selection
+    familyMembers.length > 0 && React.createElement('div', 
+      { className: 'row mb-4' },
+      React.createElement('div', 
+        { className: 'col-12' },
+        React.createElement('h5', 
+          { className: 'text-light mb-3 d-flex align-items-center' },
+          React.createElement('i', { className: 'bi bi-people me-2' }),
+          '家族の今日の状況'
+        ),
+        React.createElement('div', 
+          { className: 'd-flex gap-3 overflow-auto pb-2' },
+          familyMembers.map(member => 
+            React.createElement('div', 
+              {
+                key: member.id,
+                className: `glass-card p-3 text-center cursor-pointer ${selectedMember === member.id ? 'border-primary' : ''}`,
+                style: { 
+                  minWidth: '120px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                },
+                onClick: () => setSelectedMember(member.id)
+              },
+              React.createElement('div', { className: 'fs-1 mb-2' }, member.avatar),
+              React.createElement('div', { className: 'fw-semibold text-light' }, member.username),
+              React.createElement('div', 
+                { 
+                  className: `badge ${healthUtils.getStatusColor(member.status)} mt-2`
+                },
+                `${member.todayScore}点`
+              ),
+              member.isCurrentUser && React.createElement('div', 
+                { className: 'badge bg-primary mt-1' },
+                'あなた'
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    // Main Stats
+    React.createElement('div', 
+      { className: 'row mb-4' },
+      React.createElement('div', 
+        { className: 'col-12' },
+        React.createElement('div', 
+          { className: 'glass-card gradient-primary p-4 mb-4' },
+          React.createElement('div', 
+            { className: 'd-flex justify-content-between align-items-center' },
+            React.createElement('div', null,
+              React.createElement('h3', { className: 'text-light mb-2' }, '今日の進捗'),
+              React.createElement('p', { className: 'text-light-emphasis mb-0' }, '目標まであと少し！')
+            ),
+            CircularProgress({ 
+              percentage: todayStats.steps.percentage, 
+              size: 100, 
+              color: '#ffffff' 
+            })
+          )
+        )
+      )
+    ),
+
+    // Detailed Stats Grid
+    React.createElement('div', 
+      { className: 'row g-3 mb-4' },
+      
+      // Steps
+      React.createElement('div', 
+        { className: 'col-md-6 col-lg-3' },
+        React.createElement('div', 
+          { className: 'glass-card p-4 h-100' },
+          React.createElement('div', 
+            { className: 'd-flex justify-content-between align-items-center mb-3' },
+            React.createElement('i', { className: 'bi bi-lightning text-success fs-4' }),
+            React.createElement('span', { className: 'text-light-emphasis small' }, '歩数')
+          ),
+          React.createElement('div', { className: 'fs-3 fw-bold text-light mb-1' }, formatNumber(todayStats.steps.current)),
+          React.createElement('div', { className: 'text-light-emphasis small mb-2' }, `目標: ${formatNumber(todayStats.steps.target)}`),
+          React.createElement('div', 
+            { className: 'progress' },
+            React.createElement('div', 
+              { 
+                className: 'progress-bar bg-success progress-bar-animated',
+                style: { width: `${Math.min(todayStats.steps.percentage, 100)}%` }
+              }
+            )
+          )
+        )
+      ),
+
+      // Calories
+      React.createElement('div', 
+        { className: 'col-md-6 col-lg-3' },
+        React.createElement('div', 
+          { className: 'glass-card p-4 h-100' },
+          React.createElement('div', 
+            { className: 'd-flex justify-content-between align-items-center mb-3' },
+            React.createElement('i', { className: 'bi bi-fire text-danger fs-4' }),
+            React.createElement('span', { className: 'text-light-emphasis small' }, 'カロリー')
+          ),
+          React.createElement('div', { className: 'fs-3 fw-bold text-light mb-1' }, formatNumber(todayStats.calories.current)),
+          React.createElement('div', { className: 'text-light-emphasis small mb-2' }, `目標: ${formatNumber(todayStats.calories.target)}`),
+          React.createElement('div', 
+            { className: 'progress' },
+            React.createElement('div', 
+              { 
+                className: 'progress-bar bg-danger progress-bar-animated',
+                style: { width: `${Math.min(todayStats.calories.percentage, 100)}%` }
+              }
+            )
+          )
+        )
+      ),
+
+      // Heart Rate
+      React.createElement('div', 
+        { className: 'col-md-6 col-lg-3' },
+        React.createElement('div', 
+          { className: 'glass-card p-4 h-100' },
+          React.createElement('div', 
+            { className: 'd-flex justify-content-between align-items-center mb-3' },
+            React.createElement('i', { className: 'bi bi-heart text-info fs-4' }),
+            React.createElement('span', { className: 'text-light-emphasis small' }, '心拍数')
+          ),
+          React.createElement('div', { className: 'fs-3 fw-bold text-light mb-1' }, todayStats.heartRate.current),
+          React.createElement('div', 
+            { className: `small ${todayStats.heartRate.status === 'normal' ? 'text-success' : 'text-warning'}` },
+            todayStats.heartRate.status === 'normal' ? '正常範囲' : '要注意'
+          )
+        )
+      ),
+
+      // Active Minutes
+      React.createElement('div', 
+        { className: 'col-md-6 col-lg-3' },
+        React.createElement('div', 
+          { className: 'glass-card p-4 h-100' },
+          React.createElement('div', 
+            { className: 'd-flex justify-content-between align-items-center mb-3' },
+            React.createElement('i', { className: 'bi bi-activity text-warning fs-4' }),
+            React.createElement('span', { className: 'text-light-emphasis small' }, '活動時間')
+          ),
+          React.createElement('div', { className: 'fs-3 fw-bold text-light mb-1' }, `${todayStats.activeMinutes.current}分`),
+          React.createElement('div', { className: 'text-light-emphasis small mb-2' }, `目標: ${todayStats.activeMinutes.target}分`),
+          React.createElement('div', 
+            { className: 'progress' },
+            React.createElement('div', 
+              { 
+                className: 'progress-bar bg-warning progress-bar-animated',
+                style: { width: `${Math.min(todayStats.activeMinutes.percentage, 100)}%` }
+              }
+            )
+          )
+        )
+      )
+    ),
+
+    // Motivation Message
+    React.createElement('div', 
+      { className: 'row mb-4' },
+      React.createElement('div', 
+        { className: 'col-12' },
+        React.createElement('div', 
+          { className: 'glass-card gradient-success p-4' },
+          React.createElement('div', 
+            { className: 'd-flex align-items-center' },
+            React.createElement('i', { className: 'bi bi-star text-warning fs-4 me-3' }),
+            React.createElement('div', null,
+              React.createElement('div', { className: 'fw-semibold text-light' }, '今日の励まし'),
+              React.createElement('div', { className: 'text-light-emphasis' }, 
+                `あと${formatNumber(todayStats.steps.target - todayStats.steps.current)}歩で目標達成！家族みんなで${formatNumber(familyStats.total_steps)}歩達成中 👨‍👩‍👧‍👦`
+              )
+            )
+          )
+        )
+      )
+    ),
+
+    // Family Stats
+    familyStats && React.createElement('div', 
+      { className: 'row mb-4' },
+      React.createElement('div', 
+        { className: 'col-12' },
+        React.createElement('div', 
+          { className: 'glass-card p-4' },
+          React.createElement('h5', 
+            { className: 'text-light mb-3 d-flex align-items-center' },
+            React.createElement('i', { className: 'bi bi-bar-chart text-primary me-2' }),
+            'グループ統計（今日）'
+          ),
+          React.createElement('div', 
+            { className: 'row text-center g-4' },
+            React.createElement('div', 
+              { className: 'col-md-3 col-6' },
+              React.createElement('div', { className: 'fs-2 fw-bold text-primary' }, formatNumber(familyStats.total_steps)),
+              React.createElement('div', { className: 'text-light-emphasis' }, '合計歩数')
+            ),
+            React.createElement('div', 
+              { className: 'col-md-3 col-6' },
+              React.createElement('div', { className: 'fs-2 fw-bold text-danger' }, formatNumber(familyStats.total_calories)),
+              React.createElement('div', { className: 'text-light-emphasis' }, '合計カロリー')
+            ),
+            React.createElement('div', 
+              { className: 'col-md-3 col-6' },
+              React.createElement('div', { className: 'fs-2 fw-bold text-success' }, familyStats.active_members),
+              React.createElement('div', { className: 'text-light-emphasis' }, '活動メンバー')
+            ),
+            React.createElement('div', 
+              { className: 'col-md-3 col-6' },
+              React.createElement('div', { className: 'fs-2 fw-bold text-info' }, formatNumber(familyStats.avg_steps)),
+              React.createElement('div', { className: 'text-light-emphasis' }, '平均歩数')
+            )
+          )
+        )
+      )
+    ),
+
+    // Quick Actions
+    React.createElement('div', 
+      { className: 'row' },
+      React.createElement('div', 
+        { className: 'col-md-6 mb-3' },
+        React.createElement('button', 
+          { className: 'btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center' },
+          React.createElement('i', { className: 'bi bi-graph-up me-2' }),
+          '詳細分析'
+        )
+      ),
+      React.createElement('div', 
+        { className: 'col-md-6 mb-3' },
+        React.createElement('button', 
+          { className: 'btn btn-secondary btn-lg w-100 d-flex align-items-center justify-content-center' },
+          React.createElement('i', { className: 'bi bi-calendar me-2' }),
+          'チャレンジ'
+        )
+      )
+    )
+  );
+};
+
+// Mount the React component
+const root = createRoot(document.getElementById('react-dashboard-root'));
+root.render(React.createElement(FamilyHealthDashboard));
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session, jsonify
 from werkzeug.security import generate_password_hash
 from requests_oauthlib import OAuth2Session
 from datetime import datetime, timedelta
@@ -8,6 +8,7 @@ import json
 from openai import OpenAI
 from app import app, db
 from models import User, FamilyGroup
+from demo_data import get_demo_data, get_demo_family_stats
 
 # OpenAI client initialization
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -949,3 +950,384 @@ def chart_view(metric):
                          metric_info=metric_info[metric],
                          weekly_data=weekly_data,
                          user=user)
+
+# API エンドポイント（Next.jsフロントエンド用）
+
+@app.route('/api/user/current')
+def api_current_user():
+    """現在のユーザー情報を取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'id': str(user.id),
+        'username': user.username,
+        'email': user.email,
+        'fitbit_connected': bool(user.fitbit_access_token),
+        'fitbit_user_id': user.fitbit_user_id,
+        'created_at': user.created_at.isoformat() if user.created_at else None
+    })
+
+@app.route('/api/family/group')
+def api_family_group():
+    """家族グループ情報を取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user or not user.family_group:
+        return jsonify({'error': 'No family group'}), 404
+    
+    group = user.family_group
+    return jsonify({
+        'id': str(group.id),
+        'name': group.name,
+        'invite_code': group.invite_code,
+        'created_at': group.created_at.isoformat() if group.created_at else None,
+        'member_count': len(group.members)
+    })
+
+@app.route('/api/family/members')
+def api_family_members():
+    """家族メンバーのデータを取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    
+    # デモモードの場合
+    if app.config.get('USE_DEMO_DATA', False):
+        demo_data = get_demo_data()
+        demo_members = []
+        
+        for member_name, member_data in demo_data.items():
+            # 健康スコア計算
+            today_data = member_data['daily_data'][-1]  # 最新の日のデータ
+            health_score = min(100, max(0, int(
+                (today_data['steps'] / 10000) * 40 +
+                (today_data['calories_burned'] / 2500) * 30 +
+                (1 if 60 <= today_data['resting_heart_rate'] <= 100 else 0.5) * 30
+            )))
+            
+            # ステータス決定
+            if health_score >= 90:
+                status = 'excellent'
+            elif health_score >= 75:
+                status = 'good'
+            elif health_score >= 60:
+                status = 'active'
+            else:
+                status = 'warning'
+            
+            # アバター設定
+            avatar_map = {
+                'もえ': '👧',
+                'すずこ': '👩', 
+                'なおひさ': '👨'
+            }
+            
+            demo_members.append({
+                'id': member_name,
+                'username': member_data['username'],
+                'avatar': avatar_map.get(member_name, '👤'),
+                'status': status,
+                'todayScore': health_score,
+                'isCurrentUser': member_name == 'もえ',  # 最初のユーザーを現在のユーザーとして設定
+                'fitbit_connected': True,
+                'today_data': {
+                    'steps': today_data['steps'],
+                    'calories_burned': today_data['calories_burned'],
+                    'resting_heart_rate': today_data['resting_heart_rate'],
+                    'hrv': today_data['hrv'],
+                    'active_minutes': today_data.get('active_minutes', 45)
+                },
+                'health_comment': f"{member_data['username']}さんの健康状態は良好です。"
+            })
+        
+        return jsonify({
+            'family_members_data': demo_members,
+            'demo_mode': True
+        })
+    
+    # 実データモード
+    if not user or not user.family_group:
+        return jsonify({'family_members_data': [], 'demo_mode': False})
+    
+    family_members_data = get_family_members_with_data(user)
+    api_members = []
+    
+    for member_data in family_members_data:
+        member_user = member_data['user']
+        fitbit_data = member_data.get('fitbit_data')
+        
+        # 健康スコア計算
+        if fitbit_data:
+            health_score = min(100, max(0, int(
+                (fitbit_data.steps / 10000) * 40 +
+                (fitbit_data.calories_burned / 400) * 30 +
+                (1 if fitbit_data.resting_heart_rate and 60 <= fitbit_data.resting_heart_rate <= 100 else 0.5) * 30
+            )))
+        else:
+            health_score = 0
+        
+        # ステータス決定
+        if health_score >= 90:
+            status = 'excellent'
+        elif health_score >= 75:
+            status = 'good'
+        elif health_score >= 60:
+            status = 'active'
+        elif health_score > 0:
+            status = 'warning'
+        else:
+            status = 'inactive'
+        
+        member_info = {
+            'id': str(member_user.id),
+            'username': member_user.username,
+            'avatar': '👤',  # デフォルトアバター
+            'status': status,
+            'todayScore': health_score,
+            'isCurrentUser': member_data.get('is_current_user', False),
+            'fitbit_connected': bool(member_user.fitbit_access_token),
+            'health_comment': member_data.get('health_comment', '')
+        }
+        
+        if fitbit_data:
+            member_info['today_data'] = {
+                'steps': fitbit_data.steps,
+                'calories_burned': fitbit_data.calories_burned,
+                'resting_heart_rate': fitbit_data.resting_heart_rate,
+                'hrv': fitbit_data.hrv,
+                'active_minutes': getattr(fitbit_data, 'active_minutes', 45)
+            }
+        
+        api_members.append(member_info)
+    
+    return jsonify({
+        'family_members_data': api_members,
+        'demo_mode': False
+    })
+
+@app.route('/api/family/stats')
+def api_family_stats():
+    """家族統計情報を取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    
+    # デモモードの場合
+    if app.config.get('USE_DEMO_DATA', False):
+        demo_stats = get_demo_family_stats()
+        return jsonify(demo_stats)
+    
+    # 実データモード
+    if not user or not user.family_group:
+        return jsonify({'error': 'No family group'}), 404
+    
+    family_members_data = get_family_members_with_data(user)
+    
+    total_steps = 0
+    total_calories = 0
+    active_members = 0
+    member_count = 0
+    
+    for member_data in family_members_data:
+        fitbit_data = member_data.get('fitbit_data')
+        if fitbit_data:
+            total_steps += fitbit_data.steps
+            total_calories += fitbit_data.calories_burned
+            if fitbit_data.steps > 0:
+                active_members += 1
+        member_count += 1
+    
+    avg_steps = total_steps // member_count if member_count > 0 else 0
+    avg_calories = total_calories // member_count if member_count > 0 else 0
+    
+    return jsonify({
+        'total_steps': total_steps,
+        'total_calories': total_calories,
+        'avg_steps': avg_steps,
+        'avg_calories': avg_calories,
+        'member_count': member_count,
+        'active_members': active_members
+    })
+
+@app.route('/api/health/daily')
+@app.route('/api/health/daily/<user_id>')
+def api_daily_health_data(user_id=None):
+    """日次健康データを取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    current_user = User.query.get(session['user_id'])
+    
+    # デモモードの場合
+    if app.config.get('USE_DEMO_DATA', False):
+        demo_data = get_demo_data()
+        # 最初のメンバー（もえ）のデータを現在のユーザーとして返す
+        member_data = demo_data['もえ']
+        today_data = member_data['daily_data'][-1]
+        
+        return jsonify({
+            'date': today_data['date'],
+            'steps': today_data['steps'],
+            'calories_burned': today_data['calories_burned'],
+            'resting_heart_rate': today_data['resting_heart_rate'],
+            'hrv': today_data['hrv'],
+            'active_minutes': today_data.get('active_minutes', 45)
+        })
+    
+    # 実データモード
+    target_user = current_user
+    if user_id:
+        target_user = User.query.get(user_id)
+        if not target_user or not current_user.can_view_user_data(target_user.id):
+            return jsonify({'error': 'Access denied'}), 403
+    
+    if not target_user.fitbit_access_token:
+        return jsonify({'error': 'Fitbit not connected'}), 404
+    
+    daily_data = get_fitbit_daily_data(target_user)
+    if not daily_data:
+        return jsonify({'error': 'No data available'}), 404
+    
+    return jsonify({
+        'date': daily_data.date.isoformat(),
+        'steps': daily_data.steps,
+        'calories_burned': daily_data.calories_burned,
+        'resting_heart_rate': daily_data.resting_heart_rate,
+        'hrv': daily_data.hrv,
+        'active_minutes': getattr(daily_data, 'active_minutes', 45)
+    })
+
+@app.route('/api/health/weekly')
+@app.route('/api/health/weekly/<user_id>')
+def api_weekly_health_data(user_id=None):
+    """週次健康データを取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    current_user = User.query.get(session['user_id'])
+    
+    # デモモードの場合
+    if app.config.get('USE_DEMO_DATA', False):
+        demo_data = get_demo_data()
+        member_data = demo_data['もえ']
+        
+        weekly_data = []
+        for daily in member_data['daily_data'][-7:]:  # 過去7日間
+            weekly_data.append({
+                'date': daily['date'],
+                'steps': daily['steps'],
+                'calories_burned': daily['calories_burned'],
+                'resting_heart_rate': daily['resting_heart_rate'],
+                'hrv': daily['hrv'],
+                'active_minutes': daily.get('active_minutes', 45)
+            })
+        
+        return jsonify(weekly_data)
+    
+    # 実データモード
+    target_user = current_user
+    if user_id:
+        target_user = User.query.get(user_id)
+        if not target_user or not current_user.can_view_user_data(target_user.id):
+            return jsonify({'error': 'Access denied'}), 403
+    
+    if not target_user.fitbit_access_token:
+        return jsonify({'error': 'Fitbit not connected'}), 404
+    
+    weekly_data = get_fitbit_weekly_data(target_user)
+    if not weekly_data:
+        return jsonify({'error': 'No data available'}), 404
+    
+    result = []
+    for data in weekly_data:
+        result.append({
+            'date': data.date.isoformat(),
+            'steps': data.steps,
+            'calories_burned': data.calories_burned,
+            'resting_heart_rate': data.resting_heart_rate,
+            'hrv': data.hrv,
+            'active_minutes': getattr(data, 'active_minutes', 45)
+        })
+    
+    return jsonify(result)
+
+@app.route('/api/achievements')
+def api_achievements():
+    """実績データを取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # デモ実績データ
+    achievements = [
+        {
+            'id': '1',
+            'title': '週間目標達成！',
+            'description': '7日連続で歩数目標クリア',
+            'icon': '🏆',
+            'isNew': True,
+            'completed_at': datetime.utcnow().isoformat()
+        },
+        {
+            'id': '2',
+            'title': '家族チャレンジ',
+            'description': '家族全員で今月20万歩達成',
+            'icon': '👥',
+            'isNew': False,
+            'progress': 75
+        }
+    ]
+    
+    return jsonify(achievements)
+
+@app.route('/api/health/comment', methods=['POST'])
+def api_health_comment():
+    """AI健康コメントを生成"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    if not data or 'health_data' not in data:
+        return jsonify({'error': 'Health data required'}), 400
+    
+    health_data = data['health_data']
+    
+    try:
+        # 簡略化された健康コメント生成
+        steps = health_data.get('steps', 0)
+        calories = health_data.get('calories_burned', 0)
+        
+        if steps >= 10000:
+            comment = "素晴らしい！今日の歩数目標を達成しました。この調子で健康な生活を続けましょう。"
+        elif steps >= 7500:
+            comment = "良いペースです！もう少しで目標達成です。家族と一緒に頑張りましょう。"
+        elif steps >= 5000:
+            comment = "今日はもう少し活動を増やしてみませんか？散歩や階段の利用がおすすめです。"
+        else:
+            comment = "今日は少し活動が少なめです。短い散歩から始めて、徐々に活動量を増やしていきましょう。"
+        
+        return jsonify({'comment': comment})
+        
+    except Exception as e:
+        app.logger.error(f'Error generating health comment: {e}')
+        return jsonify({'comment': '健康データの分析中にエラーが発生しました。'})
+
+@app.route('/dashboard/react')
+def react_dashboard():
+    """React版ダッシュボードページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    return render_template('dashboard_react.html', user=user)
