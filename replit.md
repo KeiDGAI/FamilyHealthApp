@@ -104,16 +104,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- **June 28, 2025**: オリジナルReactコード完全再現ダッシュボード実装完了
-  - modern_dashboard.html：提供されたReactコードを100%忠実に再現
-  - Tailwind CSS + Lucide React Icons：CDN経由で完全実装
-  - 円形プログレスバー：SVG円弧とstroke-dashoffsetアニメーション
-  - 4人家族メンバー選択：あなた・お母さん・お父さん・妹のアバター表示
-  - グラデーション背景：slate-900からslate-800の美しいグラデーション
-  - インタラクティブ要素：クリック選択・ホバー効果・トランジション
-  - 実績システム：週間目標達成・家族チャレンジ表示
-  - モチベーションメッセージ：リアルタイム励まし機能
-  - /dashboard/modernルート：完全独立型React実装アクセス
+- **June 29, 2025**: Modernダッシュボードをホーム画面に変更・ページ構成簡素化完了
+  - ホーム画面（/）をModern Dashboardに変更：ログイン後すぐに美しいReactダッシュボード表示
+  - 不要ページ削除：React Dashboard、Modern Dashboard、グループページを削除
+  - ナビゲーション簡素化：ホーム・家族・プロフィール・ログアウトの4つのみ
+  - JavaScriptエラー修正：LucideアイコンをカスタムSVGに置換、Tailwind CSS安定化
+  - ページ構成最適化：重複機能削除でユーザビリティ向上
 - **June 28, 2025**: デモデータシステム実装完了
   - demo_data.py作成：3人家族（もえ、すずこ、なおひさ）の10日間健康データ生成
   - app.config['USE_DEMO_DATA']フラグでデモ/本番モード切り替え

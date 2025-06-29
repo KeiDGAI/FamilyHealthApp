@@ -415,7 +415,7 @@ def health_check():
 
 @app.route('/')
 def index():
-    """ホームページ - ログインチェック"""
+    """ホームページ - Modern Dashboard"""
     try:
         # テストユーザーを作成
         create_test_user()
@@ -431,64 +431,9 @@ def index():
         session.clear()
         return redirect(url_for('login'))
     
-    # 自分のFitbitデータの取得
-    fitbit_data = None
-    weekly_data = None
-    health_comment = None
-    if user.fitbit_access_token:
-        fitbit_data = get_fitbit_daily_data(user)
-        weekly_data = get_fitbit_weekly_data(user)
-        if fitbit_data:
-            health_comment = generate_health_comment(fitbit_data)
-    
-    # ファミリーグループメンバーのデータを取得（最初の5人まで、ホーム画面用）
-    family_members_data = get_family_members_with_data(user, limit=5)
-    
-    return render_template('index.html', 
-                         user=user, 
-                         fitbit_data=fitbit_data, 
-                         weekly_data=weekly_data, 
-                         health_comment=health_comment,
-                         family_members_data=family_members_data,
-                         family_group=user.family_group if user.group_id else None)
+    return render_template('modern_dashboard.html', user=user)
 
-@app.route('/group')
-def group():
-    """ファミリーグループ管理ページ"""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user = User.query.get(session['user_id'])
-    if not user:
-        return redirect(url_for('login'))
-    
-    family_group = user.family_group if user.group_id else None
-    family_members_data = []
-    
-    if family_group:
-        # グループメンバーのデータを取得
-        members = User.query.filter_by(group_id=family_group.id).all()
-        
-        for member in members:
-            member_data = {
-                'user': member,
-                'is_current_user': member.id == user.id,
-                'fitbit_data': None,
-                'health_comment': None
-            }
-            
-            # Fitbitデータを取得
-            if member.fitbit_access_token:
-                member_fitbit_data = get_fitbit_daily_data(member)
-                if member_fitbit_data:
-                    member_data['fitbit_data'] = member_fitbit_data
-            
-            family_members_data.append(member_data)
-    
-    return render_template('group.html', 
-                         user=user, 
-                         family_group=family_group,
-                         family_members_data=family_members_data)
+
 
 @app.route('/family')
 def family():
@@ -1320,26 +1265,4 @@ def api_health_comment():
         app.logger.error(f'Error generating health comment: {e}')
         return jsonify({'comment': '健康データの分析中にエラーが発生しました。'})
 
-@app.route('/dashboard/react')
-def react_dashboard():
-    """React版ダッシュボードページ"""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user = User.query.get(session['user_id'])
-    if not user:
-        return redirect(url_for('login'))
-    
-    return render_template('dashboard_react.html', user=user)
 
-@app.route('/dashboard/modern')
-def modern_dashboard():
-    """完全なReact実装によるモダンダッシュボード"""
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user = User.query.get(session['user_id'])
-    if not user:
-        return redirect(url_for('login'))
-    
-    return render_template('modern_dashboard.html', user=user)
