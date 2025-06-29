@@ -1334,12 +1334,13 @@ def react_dashboard():
 
 @app.route('/dashboard/modern')
 def modern_dashboard():
-    """完全なReact実装によるモダンダッシュボード"""
+    """Next.js版ダッシュボードページ"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    
+
     user = User.query.get(session['user_id'])
     if not user:
         return redirect(url_for('login'))
-    
-    return render_template('modern_dashboard.html', user=user)
+
+    # Next.js でビルドした静的ファイルを返す
+    return app.send_static_file('next/index.html')
