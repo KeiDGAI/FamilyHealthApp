@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.username }}の健康データ - 家族健康管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- ヘッダー -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="text-white mb-1">📊 {{ member.username }}の健康データ</h1>
+                    <p class="text-muted">過去10日間の詳細なトレンド分析</p>
+                </div>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>戻る
+                </a>
+            </div>
+
+            <!-- 統計サマリーカード -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-primary bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-walking fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ ten_days_data[-1]['steps']|default(0) }}</h3>
+                            <p class="card-text small">今日の歩数</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-success bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-fire fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ ten_days_data[-1]['calories_burned']|default(0) }}</h3>
+                            <p class="card-text small">今日の消費カロリー</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-info bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ ten_days_data[-1]['resting_heart_rate']|default(0) }}</h3>
+                            <p class="card-text small">安静時心拍数</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-warning bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ ten_days_data[-1]['hrv']|default(0) }}</h3>
+                            <p class="card-text small">心拍変動(HRV)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 棒グラフ表示 -->
+            <div class="row">
+                <!-- 歩数グラフ -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-walking me-2"></i>歩数の推移（10日間）
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="stepsChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カロリーグラフ -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-fire me-2"></i>消費カロリーの推移（10日間）
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="caloriesChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 心拍数グラフ -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-heartbeat me-2"></i>安静時心拍数の推移（10日間）
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="heartRateChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HRVグラフ -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line me-2"></i>心拍変動(HRV)の推移（10日間）
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="hrvChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細データテーブル -->
+            <div class="card bg-dark mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-table me-2"></i>詳細データ一覧
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    <th>歩数</th>
+                                    <th>カロリー</th>
+                                    <th>安静時心拍数</th>
+                                    <th>HRV</th>
+                                    <th>目標達成</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in ten_days_data %}
+                                <tr>
+                                    <td>{{ data.date }}</td>
+                                    <td>
+                                        <span class="badge {% if data.steps >= 10000 %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ data.steps|default(0) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if data.calories_burned >= 2000 %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ data.calories_burned|default(0) }}
+                                        </span>
+                                    </td>
+                                    <td>{{ data.resting_heart_rate|default('-') }}</td>
+                                    <td>{{ data.hrv|default('-') }}</td>
+                                    <td>
+                                        {% if data.steps >= 10000 and data.calories_burned >= 2000 %}
+                                            <span class="badge bg-success">達成</span>
+                                        {% elif data.steps >= 10000 or data.calories_burned >= 2000 %}
+                                            <span class="badge bg-warning">部分達成</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">未達成</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('goals') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-target me-2"></i>目標設定
+                </a>
+                <a href="{{ url_for('goal_achievements') }}" class="btn btn-success me-2">
+                    <i class="fas fa-trophy me-2"></i>実績確認
+                </a>
+                <a href="{{ url_for('family_challenges') }}" class="btn btn-info">
+                    <i class="fas fa-users me-2"></i>家族チャレンジ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // データの準備
+    const tenDaysData = {{ ten_days_data|tojson }};
+    const dates = tenDaysData.map(d => d.date);
+    const steps = tenDaysData.map(d => d.steps || 0);
+    const calories = tenDaysData.map(d => d.calories_burned || 0);
+    const heartRate = tenDaysData.map(d => d.resting_heart_rate || 0);
+    const hrv = tenDaysData.map(d => d.hrv || 0);
+
+    // 共通のChart.js設定
+    const commonOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                },
+                ticks: {
+                    color: '#fff'
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                },
+                ticks: {
+                    color: '#fff'
+                }
+            }
+        }
+    };
+
+    // 歩数グラフ
+    new Chart(document.getElementById('stepsChart'), {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                data: steps,
+                backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: {
+                        display: true,
+                        text: '歩数',
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
+
+    // カロリーグラフ
+    new Chart(document.getElementById('caloriesChart'), {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                data: calories,
+                backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: {
+                        display: true,
+                        text: 'カロリー',
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
+
+    // 心拍数グラフ
+    new Chart(document.getElementById('heartRateChart'), {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                data: heartRate,
+                backgroundColor: 'rgba(255, 206, 86, 0.8)',
+                borderColor: 'rgba(255, 206, 86, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: {
+                        display: true,
+                        text: 'BPM',
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
+
+    // HRVグラフ
+    new Chart(document.getElementById('hrvChart'), {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [{
+                data: hrv,
+                backgroundColor: 'rgba(75, 192, 192, 0.8)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                ...commonOptions.scales,
+                y: {
+                    ...commonOptions.scales.y,
+                    title: {
+                        display: true,
+                        text: 'HRV',
+                        color: '#fff'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,463 @@
+{% extends "base.html" %}
+
+{% block title %}家族チャレンジ - 家族健康管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- ヘッダー -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="text-white mb-1">👨‍👩‍👧‍👦 家族チャレンジ</h1>
+                    <p class="text-muted">家族みんなで健康目標に挑戦しましょう</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('family') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-users me-2"></i>家族ページ
+                    </a>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>戻る
+                    </a>
+                </div>
+            </div>
+
+            <!-- 家族グループ情報 -->
+            <div class="card bg-dark mb-4">
+                <div class="card-header bg-gradient-primary">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-home me-2"></i>{{ family_group.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <div class="text-center">
+                                        <h4 class="text-primary">{{ family_members|length }}</h4>
+                                        <small class="text-muted">メンバー数</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="text-center">
+                                        <h4 class="text-success">{{ family_stats.total_steps|default(0) }}</h4>
+                                        <small class="text-muted">総歩数</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="text-center">
+                                        <h4 class="text-warning">{{ family_stats.total_calories|default(0) }}</h4>
+                                        <small class="text-muted">総消費カロリー</small>
+                                    </div>
+                                </div>
+                                <div class="col-sm-3">
+                                    <div class="text-center">
+                                        <h4 class="text-info">{{ family_stats.avg_steps|default(0) }}</h4>
+                                        <small class="text-muted">平均歩数</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <div class="mb-2">
+                                    <strong>招待コード:</strong>
+                                    <code class="bg-secondary px-2 py-1 rounded">{{ family_group.invite_code }}</code>
+                                </div>
+                                <button class="btn btn-sm btn-outline-light" onclick="copyInviteCode()">
+                                    <i class="fas fa-copy me-1"></i>コピー
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクティブチャレンジ -->
+            <div class="card bg-dark mb-4">
+                <div class="card-header bg-success">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-fire me-2"></i>アクティブチャレンジ
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4 mb-3">
+                            <div class="card bg-gradient-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-walking fa-2x mb-2"></i>
+                                    <h6 class="card-title">ファミリーステップ</h6>
+                                    <p class="card-text small">家族で1週間に80,000歩を目指す</p>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar" role="progressbar" style="width: 65%">
+                                            52,000/80,000
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-light text-dark">65% 達成</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-3">
+                            <div class="card bg-gradient-warning">
+                                <div class="card-body text-center text-dark">
+                                    <i class="fas fa-fire fa-2x mb-2"></i>
+                                    <h6 class="card-title">カロリーバーン</h6>
+                                    <p class="card-text small">家族で1週間に15,000kcal消費</p>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-dark" role="progressbar" style="width: 73%">
+                                            11,000/15,000
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-dark">73% 達成</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-3">
+                            <div class="card bg-gradient-info">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                                    <h6 class="card-title">継続チャレンジ</h6>
+                                    <p class="card-text small">全員が3日連続で目標達成</p>
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: 67%">
+                                            2/3日
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-light text-dark">2日目</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 家族メンバー参加状況 -->
+            <div class="card bg-dark mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>メンバー参加状況
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for member in family_members %}
+                        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+                            <div class="card {% if member.id == user.id %}bg-primary{% else %}bg-secondary{% endif %}">
+                                <div class="card-body text-center">
+                                    <div class="avatar-circle mb-2">
+                                        {% if member.username == 'もえ' %}👩
+                                        {% elif member.username == 'すずこ' %}👧
+                                        {% elif member.username == 'なおひさ' %}👨
+                                        {% else %}👤{% endif %}
+                                    </div>
+                                    <h6 class="card-title">{{ member.username }}</h6>
+                                    {% if member.id == user.id %}
+                                        <span class="badge bg-light text-dark">あなた</span>
+                                    {% endif %}
+                                    <div class="mt-2">
+                                        <small class="text-light">今日の貢献度</small>
+                                        <div class="progress mt-1">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ (loop.index * 20 + 40) }}%">
+                                                {{ loop.index * 20 + 40 }}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 新しいチャレンジを作成 -->
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header bg-primary">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-plus me-2"></i>新しいチャレンジを作成
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="createChallengeForm">
+                                <div class="mb-3">
+                                    <label for="challengeTitle" class="form-label">チャレンジ名</label>
+                                    <input type="text" class="form-control" id="challengeTitle" placeholder="例: 家族で山登りチャレンジ">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="challengeType" class="form-label">チャレンジタイプ</label>
+                                    <select class="form-select" id="challengeType">
+                                        <option value="steps">歩数チャレンジ</option>
+                                        <option value="calories">カロリー消費チャレンジ</option>
+                                        <option value="days">連続達成チャレンジ</option>
+                                        <option value="team">チーム協力チャレンジ</option>
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="targetValue" class="form-label">目標値</label>
+                                        <input type="number" class="form-control" id="targetValue" placeholder="10000">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="duration" class="form-label">期間（日）</label>
+                                        <select class="form-select" id="duration">
+                                            <option value="3">3日間</option>
+                                            <option value="7" selected>1週間</option>
+                                            <option value="14">2週間</option>
+                                            <option value="30">1ヶ月</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="reward" class="form-label">報酬・ご褒美</label>
+                                    <input type="text" class="form-control" id="reward" placeholder="例: 家族でお好きなレストランへ">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">説明・ルール</label>
+                                    <textarea class="form-control" id="description" rows="3" placeholder="チャレンジの詳細な説明やルールを記入"></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-rocket me-2"></i>チャレンジを開始
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <!-- チャレンジテンプレート -->
+                    <div class="card bg-dark">
+                        <div class="card-header bg-info">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>おすすめテンプレート
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="useTemplate('family_steps')">
+                                    👨‍👩‍👧‍👦 ファミリー散歩週間
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" onclick="useTemplate('weekend_active')">
+                                    🏃‍♀️ 週末アクティブ
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="useTemplate('healthy_cooking')">
+                                    🍳 ヘルシー料理チャレンジ
+                                </button>
+                                <button class="btn btn-outline-info btn-sm" onclick="useTemplate('morning_exercise')">
+                                    🌅 朝活チャレンジ
+                                </button>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <div class="text-center">
+                                <h6 class="text-info">チャレンジ統計</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <h5 class="text-success">12</h5>
+                                            <small>完了</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center">
+                                            <h5 class="text-primary">3</h5>
+                                            <small>進行中</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 実績・バッジ -->
+                    <div class="card bg-dark mt-3">
+                        <div class="card-header bg-warning">
+                            <h5 class="card-title mb-0 text-dark">
+                                <i class="fas fa-medal me-2"></i>家族実績
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div class="mb-3">
+                                    <span class="badge bg-gold fs-6 mb-2 w-100" style="background-color: #ffd700 !important; color: #000;">
+                                        🥇 チャレンジマスター
+                                    </span>
+                                    <small class="text-muted d-block">10回連続チャレンジ成功</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-silver fs-6 mb-2 w-100" style="background-color: #c0c0c0 !important; color: #000;">
+                                        🥈 ファミリーユニティ
+                                    </span>
+                                    <small class="text-muted d-block">全員参加チャレンジ5回</small>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="badge bg-bronze fs-6 mb-2 w-100" style="background-color: #cd7f32 !important; color: #fff;">
+                                        🥉 継続の力
+                                    </span>
+                                    <small class="text-muted d-block">30日連続参加</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 招待コードコピー機能
+function copyInviteCode() {
+    const inviteCode = '{{ family_group.invite_code }}';
+    navigator.clipboard.writeText(inviteCode).then(() => {
+        showSuccess('招待コードがコピーされました！');
+    });
+}
+
+// テンプレート使用機能
+function useTemplate(templateType) {
+    const templates = {
+        family_steps: {
+            title: 'ファミリー散歩週間',
+            type: 'steps',
+            target: 70000,
+            duration: 7,
+            reward: '家族で映画鑑賞',
+            description: '家族全員で1週間に合計70,000歩を目指します。毎日散歩したり、一緒に買い物に行ったりして楽しく達成しましょう！'
+        },
+        weekend_active: {
+            title: '週末アクティブ',
+            type: 'calories',
+            target: 5000,
+            duration: 2,
+            reward: '特別なブランチ',
+            description: '土日の2日間で家族合計5,000kcalの消費を目指します。アウトドア活動やスポーツを楽しみましょう！'
+        },
+        healthy_cooking: {
+            title: 'ヘルシー料理チャレンジ',
+            type: 'days',
+            target: 5,
+            duration: 7,
+            reward: '外食ディナー',
+            description: '1週間のうち5日間、家族でヘルシーな料理を作って食べるチャレンジです。一緒に料理することで絆も深まります。'
+        },
+        morning_exercise: {
+            title: '朝活チャレンジ',
+            type: 'team',
+            target: 21,
+            duration: 7,
+            reward: '温泉旅行',
+            description: '1週間毎朝、家族で軽い運動をするチャレンジ。ラジオ体操やストレッチなど、全員で合計21回の朝活を目指します。'
+        }
+    };
+    
+    const template = templates[templateType];
+    if (template) {
+        document.getElementById('challengeTitle').value = template.title;
+        document.getElementById('challengeType').value = template.type;
+        document.getElementById('targetValue').value = template.target;
+        document.getElementById('duration').value = template.duration;
+        document.getElementById('reward').value = template.reward;
+        document.getElementById('description').value = template.description;
+        
+        showSuccess('テンプレートが適用されました！');
+    }
+}
+
+// チャレンジ作成フォーム送信
+document.getElementById('createChallengeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        title: document.getElementById('challengeTitle').value,
+        type: document.getElementById('challengeType').value,
+        target: document.getElementById('targetValue').value,
+        duration: document.getElementById('duration').value,
+        reward: document.getElementById('reward').value,
+        description: document.getElementById('description').value
+    };
+    
+    if (!formData.title || !formData.target) {
+        showError('チャレンジ名と目標値は必須です');
+        return;
+    }
+    
+    // ローカルストレージに保存（実際のアプリではサーバーに送信）
+    const challenges = JSON.parse(localStorage.getItem('familyChallenges') || '[]');
+    challenges.push({
+        ...formData,
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+        status: 'active',
+        progress: 0
+    });
+    localStorage.setItem('familyChallenges', JSON.stringify(challenges));
+    
+    // フォームリセット
+    document.getElementById('createChallengeForm').reset();
+    
+    showSuccess('新しいチャレンジが作成されました！家族のみんなに通知しましょう。');
+});
+
+// 成功メッセージ表示
+function showSuccess(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+
+// エラーメッセージ表示
+function showError(message) {
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+
+// アバターサークルスタイル
+const style = document.createElement('style');
+style.textContent = `
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        margin: 0 auto;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

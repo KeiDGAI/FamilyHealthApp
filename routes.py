@@ -1265,4 +1265,156 @@ def api_health_comment():
         app.logger.error(f'Error generating health comment: {e}')
         return jsonify({'comment': '健康データの分析中にエラーが発生しました。'})
 
+# 新しい詳細ページルート
+@app.route('/member/<int:member_id>/details')
+def member_details(member_id):
+    """家族メンバーの詳細健康データページ（10日間のトレンド表示）"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    current_user = User.query.get(session['user_id'])
+    if not current_user:
+        return redirect(url_for('login'))
+    
+    # メンバーのデータを取得
+    if member_id == current_user.id:
+        member = current_user
+    else:
+        member = User.query.get(member_id)
+        if not member or not current_user.can_view_user_data(member_id):
+            flash('このメンバーのデータを表示する権限がありません。', 'danger')
+            return redirect(url_for('index'))
+    
+    # 10日間のデータを取得
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    ten_days_data = []
+    
+    for i in range(10):
+        date = today - timedelta(days=i)
+        
+        if app.config.get('USE_DEMO_DATA', True):
+            # デモデータ使用
+            demo_data = get_demo_data()
+            if member.username in demo_data:
+                day_data = demo_data[member.username].get(date.strftime('%Y-%m-%d'), {
+                    'steps': 0, 'calories_burned': 0, 'resting_heart_rate': 0, 'hrv': 0
+                })
+            else:
+                day_data = {'steps': 0, 'calories_burned': 0, 'resting_heart_rate': 0, 'hrv': 0}
+        else:
+            # 実データ使用
+            fitbit_data = FitbitData.query.filter_by(user_id=member.id, date=date).first()
+            if fitbit_data:
+                day_data = fitbit_data.to_dict()
+            else:
+                day_data = {'steps': 0, 'calories_burned': 0, 'resting_heart_rate': 0, 'hrv': 0}
+        
+        day_data['date'] = date.strftime('%m/%d')
+        ten_days_data.append(day_data)
+    
+    # データを日付順にソート（古い順）
+    ten_days_data.reverse()
+    
+    return render_template('member_details.html', member=member, ten_days_data=ten_days_data)
+
+@app.route('/goals')
+def goals():
+    """目標設定画面"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    return render_template('goals.html', user=user)
+
+@app.route('/goals/achievements')
+def goal_achievements():
+    """目標達成状況詳細画面"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    # 今日と過去7日間のデータを取得
+    from datetime import datetime, timedelta
+    today = datetime.now().date()
+    weekly_achievements = []
+    
+    for i in range(7):
+        date = today - timedelta(days=i)
+        
+        if app.config.get('USE_DEMO_DATA', True):
+            demo_data = get_demo_data()
+            if user.username in demo_data:
+                day_data = demo_data[user.username].get(date.strftime('%Y-%m-%d'), {
+                    'steps': 0, 'calories_burned': 0
+                })
+            else:
+                day_data = {'steps': 0, 'calories_burned': 0}
+        else:
+            fitbit_data = FitbitData.query.filter_by(user_id=user.id, date=date).first()
+            if fitbit_data:
+                day_data = {'steps': fitbit_data.steps, 'calories_burned': fitbit_data.calories_burned}
+            else:
+                day_data = {'steps': 0, 'calories_burned': 0}
+        
+        # 目標達成判定
+        step_goal_achieved = day_data['steps'] >= 10000
+        calorie_goal_achieved = day_data['calories_burned'] >= 2000
+        
+        weekly_achievements.append({
+            'date': date.strftime('%m/%d'),
+            'steps': day_data['steps'],
+            'calories': day_data['calories_burned'],
+            'step_goal_achieved': step_goal_achieved,
+            'calorie_goal_achieved': calorie_goal_achieved,
+            'total_achievements': sum([step_goal_achieved, calorie_goal_achieved])
+        })
+    
+    weekly_achievements.reverse()  # 古い順にソート
+    
+    return render_template('goal_achievements.html', user=user, weekly_achievements=weekly_achievements)
+
+@app.route('/family/challenges')
+def family_challenges():
+    """家族チャレンジ設定画面"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    # 家族グループを取得
+    family_group = user.family_group
+    if not family_group:
+        flash('家族グループに参加していません。', 'warning')
+        return redirect(url_for('index'))
+    
+    # 家族メンバーを取得
+    family_members = User.query.filter_by(group_id=family_group.id).all()
+    
+    # 家族全体の統計を取得
+    if app.config.get('USE_DEMO_DATA', True):
+        family_stats = get_demo_family_stats()
+    else:
+        family_stats = {
+            'total_steps': 0,
+            'total_calories': 0,
+            'member_count': len(family_members),
+            'avg_steps': 0,
+            'avg_calories': 0
+        }
+    
+    return render_template('family_challenges.html', 
+                         user=user, 
+                         family_group=family_group, 
+                         family_members=family_members,
+                         family_stats=family_stats)
+
 
