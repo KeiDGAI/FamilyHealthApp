@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}目標達成状況 - 家族健康管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- ヘッダー -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="text-white mb-1">🏆 目標達成状況</h1>
+                    <p class="text-muted">過去7日間の目標達成実績と詳細分析</p>
+                </div>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>戻る
+                </a>
+            </div>
+
+            <!-- 週間サマリー -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-success bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-trophy fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ weekly_achievements|selectattr('step_goal_achieved')|list|length }}/7</h3>
+                            <p class="card-text">歩数目標達成日数</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-warning bg-gradient">
+                        <div class="card-body text-center text-dark">
+                            <i class="fas fa-fire fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ weekly_achievements|selectattr('calorie_goal_achieved')|list|length }}/7</h3>
+                            <p class="card-text">カロリー目標達成日数</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-info bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-star fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ weekly_achievements|map(attribute='total_achievements')|sum }}</h3>
+                            <p class="card-text">総実績ポイント</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card bg-primary bg-gradient">
+                        <div class="card-body text-center">
+                            <i class="fas fa-percentage fa-2x mb-2"></i>
+                            <h3 class="card-title">{{ ((weekly_achievements|map(attribute='total_achievements')|sum / 14) * 100)|round }}%</h3>
+                            <p class="card-text">週間達成率</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 達成状況チャート -->
+            <div class="row mb-4">
+                <div class="col-lg-8 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>週間達成状況グラフ
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="achievementChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-medal me-2"></i>実績バッジ
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% set step_achievements = weekly_achievements|selectattr('step_goal_achieved')|list|length %}
+                            {% set calorie_achievements = weekly_achievements|selectattr('calorie_goal_achieved')|list|length %}
+                            
+                            <!-- ステップバッジ -->
+                            <div class="mb-3">
+                                {% if step_achievements == 7 %}
+                                <div class="badge bg-success fs-6 mb-2 w-100">
+                                    🥇 パーフェクト・ウォーカー
+                                </div>
+                                {% elif step_achievements >= 5 %}
+                                <div class="badge bg-primary fs-6 mb-2 w-100">
+                                    🥈 ステップ・チャンピオン
+                                </div>
+                                {% elif step_achievements >= 3 %}
+                                <div class="badge bg-warning fs-6 mb-2 w-100">
+                                    🥉 ウォーキング・エンスージアスト
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- カロリーバッジ -->
+                            <div class="mb-3">
+                                {% if calorie_achievements == 7 %}
+                                <div class="badge bg-danger fs-6 mb-2 w-100">
+                                    🔥 カロリー・マスター
+                                </div>
+                                {% elif calorie_achievements >= 5 %}
+                                <div class="badge bg-warning fs-6 mb-2 w-100">
+                                    ⚡ エナジー・バーナー
+                                </div>
+                                {% elif calorie_achievements >= 3 %}
+                                <div class="badge bg-info fs-6 mb-2 w-100">
+                                    💪 アクティブ・ライフ
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- コンシステンシーバッジ -->
+                            {% set consecutive_days = 0 %}
+                            {% set max_consecutive = 0 %}
+                            {% for achievement in weekly_achievements %}
+                                {% if achievement.total_achievements >= 1 %}
+                                    {% set consecutive_days = consecutive_days + 1 %}
+                                    {% if consecutive_days > max_consecutive %}
+                                        {% set max_consecutive = consecutive_days %}
+                                    {% endif %}
+                                {% else %}
+                                    {% set consecutive_days = 0 %}
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if max_consecutive >= 7 %}
+                            <div class="badge bg-purple fs-6 mb-2 w-100" style="background-color: #6f42c1 !important;">
+                                🎯 コンシステンシー・キング
+                            </div>
+                            {% elif max_consecutive >= 5 %}
+                            <div class="badge bg-secondary fs-6 mb-2 w-100">
+                                🔄 習慣メーカー
+                            </div>
+                            {% endif %}
+
+                            <div class="text-center mt-3">
+                                <small class="text-muted">次のバッジまで頑張りましょう！</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 詳細達成状況テーブル -->
+            <div class="card bg-dark mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar me-2"></i>日別達成状況詳細
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    <th>歩数</th>
+                                    <th>目標達成</th>
+                                    <th>カロリー</th>
+                                    <th>目標達成</th>
+                                    <th>達成度</th>
+                                    <th>評価</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for achievement in weekly_achievements %}
+                                <tr>
+                                    <td>{{ achievement.date }}</td>
+                                    <td>
+                                        <span class="badge {% if achievement.step_goal_achieved %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ achievement.steps|default(0) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if achievement.step_goal_achieved %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if achievement.calorie_goal_achieved %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ achievement.calories|default(0) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if achievement.calorie_goal_achieved %}
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar {% if achievement.total_achievements == 2 %}bg-success{% elif achievement.total_achievements == 1 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 role="progressbar" 
+                                                 style="width: {{ (achievement.total_achievements / 2 * 100)|round }}%"
+                                                 aria-valuenow="{{ achievement.total_achievements }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="2">
+                                                {{ achievement.total_achievements }}/2
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if achievement.total_achievements == 2 %}
+                                            <span class="badge bg-success">完璧</span>
+                                        {% elif achievement.total_achievements == 1 %}
+                                            <span class="badge bg-warning">良好</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">要改善</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- モチベーション・メッセージ -->
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header bg-success">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-thumbs-up me-2"></i>今週の成果
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% set total_achievements = weekly_achievements|map(attribute='total_achievements')|sum %}
+                            {% if total_achievements >= 12 %}
+                            <div class="alert alert-success">
+                                <h6 class="alert-heading">素晴らしい成果です！</h6>
+                                <p>この調子で健康習慣を継続していきましょう。あなたの努力が確実に実を結んでいます。</p>
+                            </div>
+                            {% elif total_achievements >= 8 %}
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">順調な進歩です！</h6>
+                                <p>良いペースで目標に取り組んでいます。少しずつでも継続することが大切です。</p>
+                            </div>
+                            {% elif total_achievements >= 4 %}
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading">もう少しです！</h6>
+                                <p>目標達成まであと一歩です。小さな努力の積み重ねが大きな成果につながります。</p>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading">新しいスタートを！</h6>
+                                <p>今週は思うようにいかなかったかもしれませんが、明日から新たに頑張りましょう。</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 mb-4">
+                    <div class="card bg-dark">
+                        <div class="card-header bg-primary">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-target me-2"></i>改善提案
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6>来週に向けてのアドバイス:</h6>
+                            <ul class="list-unstyled">
+                                {% if weekly_achievements|selectattr('step_goal_achieved')|list|length < 4 %}
+                                <li><i class="fas fa-walking text-primary me-2"></i>散歩の習慣を増やしてみましょう</li>
+                                {% endif %}
+                                {% if weekly_achievements|selectattr('calorie_goal_achieved')|list|length < 4 %}
+                                <li><i class="fas fa-dumbbell text-warning me-2"></i>軽い運動を取り入れてみましょう</li>
+                                {% endif %}
+                                <li><i class="fas fa-users text-success me-2"></i>家族と一緒に活動してみましょう</li>
+                                <li><i class="fas fa-calendar text-info me-2"></i>毎日同じ時間に活動する習慣を</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('goals') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-edit me-2"></i>目標を調整
+                </a>
+                <a href="{{ url_for('family_challenges') }}" class="btn btn-success me-2">
+                    <i class="fas fa-users me-2"></i>家族チャレンジ
+                </a>
+                <button class="btn btn-info" onclick="shareAchievements()">
+                    <i class="fas fa-share me-2"></i>成果をシェア
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 達成状況データの準備
+    const weeklyData = {{ weekly_achievements|tojson }};
+    const dates = weeklyData.map(d => d.date);
+    const stepAchievements = weeklyData.map(d => d.step_goal_achieved ? 1 : 0);
+    const calorieAchievements = weeklyData.map(d => d.calorie_goal_achieved ? 1 : 0);
+
+    // 達成状況チャート
+    new Chart(document.getElementById('achievementChart'), {
+        type: 'bar',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: '歩数目標達成',
+                    data: stepAchievements,
+                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'カロリー目標達成',
+                    data: calorieAchievements,
+                    backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 1,
+                    ticks: {
+                        stepSize: 1,
+                        color: '#fff',
+                        callback: function(value) {
+                            return value === 1 ? '達成' : '未達成';
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#fff'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+});
+
+function shareAchievements() {
+    const totalAchievements = {{ weekly_achievements|map(attribute='total_achievements')|sum }};
+    const stepDays = {{ weekly_achievements|selectattr('step_goal_achieved')|list|length }};
+    const calorieDays = {{ weekly_achievements|selectattr('calorie_goal_achieved')|list|length }};
+    
+    const message = `今週の健康目標達成状況:\n🚶歩数目標: ${stepDays}/7日達成\n🔥カロリー目標: ${calorieDays}/7日達成\n⭐総合スコア: ${totalAchievements}/14ポイント\n\n家族健康管理アプリで健康管理中！`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: '今週の健康実績',
+            text: message
+        });
+    } else {
+        // フォールバック: クリップボードにコピー
+        navigator.clipboard.writeText(message).then(() => {
+            alert('成果がクリップボードにコピーされました！');
+        });
+    }
+}
+</script>
+{% endblock %}

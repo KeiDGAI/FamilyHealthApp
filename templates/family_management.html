@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家族管理 - 家族健康管理</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 統一ナビゲーション -->
+    {% include 'components/navigation.html' %}
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .bg-gradient-to-br { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+        .bg-gradient-to-r { background: linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to, rgba(255, 255, 255, 0))); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="dark">
+    <div id="family-management-root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+
+        // SVGアイコン定義
+        const UsersIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+        );
+
+        const MailIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+        );
+
+        const KeyIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+        );
+
+        const CheckIcon = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+        );
+
+        const XIcon = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        );
+
+        const FamilyManagementPage = () => {
+            const [user] = useState({
+                username: '{{ user.username }}',
+                id: '{{ user.id }}'
+            });
+
+            const [familyGroup] = useState({
+                {% if family_group %}
+                name: '{{ family_group.name }}',
+                invite_code: '{{ family_group.invite_code }}',
+                member_count: {{ family_group.members|length }}
+                {% else %}
+                name: null,
+                invite_code: null,
+                member_count: 0
+                {% endif %}
+            });
+
+            const [showInviteCode, setShowInviteCode] = useState(false);
+            const [newGroupName, setNewGroupName] = useState('');
+            const [joinCode, setJoinCode] = useState('');
+            const [pendingInvitations] = useState([
+                // デモデータ - 将来的にバックエンドから取得
+                { id: 1, username: 'たろう', email: 'taro@example.com', requested_at: '2024-06-30' },
+                { id: 2, username: 'はなこ', email: 'hanako@example.com', requested_at: '2024-06-29' }
+            ]);
+
+            const copyInviteCode = () => {
+                navigator.clipboard.writeText(familyGroup.invite_code);
+                alert('招待コードをコピーしました！');
+            };
+
+            const createNewGroup = async () => {
+                if (!newGroupName.trim()) return;
+                
+                try {
+                    const response = await fetch('/api/create-family-group', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: newGroupName })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.error('グループ作成エラー:', error);
+                }
+            };
+
+            const joinGroup = async () => {
+                if (!joinCode.trim()) return;
+                
+                try {
+                    const response = await fetch('/join-group', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ invite_code: joinCode })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || '参加に失敗しました');
+                    }
+                } catch (error) {
+                    console.error('グループ参加エラー:', error);
+                }
+            };
+
+            const handleInvitationAction = async (invitationId, action) => {
+                try {
+                    const response = await fetch('/api/handle-invitation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ invitation_id: invitationId, action: action })
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        // 招待リストから削除（実際の実装では状態更新が必要）
+                        alert(action === 'approve' ? '承認しました！' : '拒否しました');
+                    }
+                } catch (error) {
+                    console.error('招待処理エラー:', error);
+                }
+            };
+
+            return (
+                React.createElement('div', { className: 'min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4' },
+                    
+                    // 統一ナビゲーションバー
+                    React.createElement(UnifiedNavigation, { currentPage: 'management' }),
+
+                    // メインコンテンツ
+                    React.createElement('div', { className: 'max-w-4xl mx-auto' },
+                        
+                        // ヘッダー
+                        React.createElement('div', { className: 'text-center mb-8' },
+                            React.createElement('h1', { className: 'text-3xl font-bold text-white mb-2' }, '家族管理'),
+                            React.createElement('p', { className: 'text-slate-300' }, '家族グループの作成・参加・招待の管理を行います')
+                        ),
+
+                        // 現在の家族グループ状況
+                        React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 mb-6 border border-slate-700/30' },
+                            React.createElement('div', { className: 'flex items-center mb-4' },
+                                React.createElement(UsersIcon, { className: 'w-6 h-6 text-blue-400 mr-3' }),
+                                React.createElement('h2', { className: 'text-xl font-semibold text-white' }, '現在の家族グループ')
+                            ),
+                            familyGroup.name ? (
+                                React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('div', { className: 'flex justify-between items-center' },
+                                        React.createElement('div', null,
+                                            React.createElement('h3', { className: 'text-lg font-medium text-white' }, familyGroup.name),
+                                            React.createElement('p', { className: 'text-slate-300' }, `${familyGroup.member_count}人のメンバー`)
+                                        ),
+                                        React.createElement('button', {
+                                            onClick: () => setShowInviteCode(!showInviteCode),
+                                            className: 'bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white transition-colors'
+                                        }, showInviteCode ? '招待コードを隠す' : '招待コードを表示')
+                                    ),
+                                    showInviteCode && React.createElement('div', { className: 'bg-slate-900/50 rounded-lg p-4' },
+                                        React.createElement('div', { className: 'flex items-center justify-between' },
+                                            React.createElement('div', null,
+                                                React.createElement('p', { className: 'text-sm text-slate-300 mb-1' }, '招待コード'),
+                                                React.createElement('p', { className: 'text-2xl font-mono font-bold text-white' }, familyGroup.invite_code)
+                                            ),
+                                            React.createElement('button', {
+                                                onClick: copyInviteCode,
+                                                className: 'bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-sm transition-colors'
+                                            }, 'コピー')
+                                        )
+                                    )
+                                )
+                            ) : (
+                                React.createElement('p', { className: 'text-slate-300' }, 'まだ家族グループに参加していません')
+                            )
+                        ),
+
+                        // グループ作成・参加
+                        !familyGroup.name && React.createElement('div', { className: 'grid md:grid-cols-2 gap-6 mb-6' },
+                            // 新しいグループ作成
+                            React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                                React.createElement('div', { className: 'flex items-center mb-4' },
+                                    React.createElement(UsersIcon, { className: 'w-6 h-6 text-green-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '新しいグループを作成')
+                                ),
+                                React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        placeholder: 'グループ名を入力',
+                                        value: newGroupName,
+                                        onChange: (e) => setNewGroupName(e.target.value),
+                                        className: 'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500'
+                                    }),
+                                    React.createElement('button', {
+                                        onClick: createNewGroup,
+                                        disabled: !newGroupName.trim(),
+                                        className: 'w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600 px-4 py-2 rounded-lg text-white transition-colors'
+                                    }, 'グループを作成')
+                                )
+                            ),
+
+                            // 既存グループに参加
+                            React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                                React.createElement('div', { className: 'flex items-center mb-4' },
+                                    React.createElement(KeyIcon, { className: 'w-6 h-6 text-blue-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '既存グループに参加')
+                                ),
+                                React.createElement('div', { className: 'space-y-4' },
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        placeholder: '招待コードを入力',
+                                        value: joinCode,
+                                        onChange: (e) => setJoinCode(e.target.value),
+                                        className: 'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-blue-500'
+                                    }),
+                                    React.createElement('button', {
+                                        onClick: joinGroup,
+                                        disabled: !joinCode.trim(),
+                                        className: 'w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-4 py-2 rounded-lg text-white transition-colors'
+                                    }, 'グループに参加')
+                                )
+                            )
+                        ),
+
+                        // 参加申請の承認（グループ作成者のみ表示）
+                        familyGroup.name && pendingInvitations.length > 0 && React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                            React.createElement('div', { className: 'flex items-center mb-4' },
+                                React.createElement(MailIcon, { className: 'w-6 h-6 text-yellow-400 mr-3' }),
+                                React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '参加申請の承認'),
+                                React.createElement('span', { className: 'ml-2 bg-yellow-600 text-white px-2 py-1 rounded-full text-sm' }, pendingInvitations.length)
+                            ),
+                            React.createElement('div', { className: 'space-y-3' },
+                                pendingInvitations.map(invitation =>
+                                    React.createElement('div', { 
+                                        key: invitation.id, 
+                                        className: 'flex items-center justify-between bg-slate-900/50 rounded-lg p-4' 
+                                    },
+                                        React.createElement('div', null,
+                                            React.createElement('h4', { className: 'font-medium text-white' }, invitation.username),
+                                            React.createElement('p', { className: 'text-sm text-slate-300' }, invitation.email),
+                                            React.createElement('p', { className: 'text-xs text-slate-400' }, `申請日: ${invitation.requested_at}`)
+                                        ),
+                                        React.createElement('div', { className: 'flex space-x-2' },
+                                            React.createElement('button', {
+                                                onClick: () => handleInvitationAction(invitation.id, 'approve'),
+                                                className: 'bg-green-600 hover:bg-green-700 p-2 rounded-lg text-white transition-colors'
+                                            }, React.createElement(CheckIcon)),
+                                            React.createElement('button', {
+                                                onClick: () => handleInvitationAction(invitation.id, 'reject'),
+                                                className: 'bg-red-600 hover:bg-red-700 p-2 rounded-lg text-white transition-colors'
+                                            }, React.createElement(XIcon))
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const root = createRoot(document.getElementById('family-management-root'));
+        root.render(React.createElement(FamilyManagementPage));
+    </script>
+</body>
+</html>

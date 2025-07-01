@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}家族の健康データ - 家族健康管理{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家族健康ダッシュボード</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div id="family-dashboard-root" class="p-6"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+
+        // SVGアイコンコンポーネント
+        const Users = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('path', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            d: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a4 4 0 11-8 0 4 4 0 018 0z" 
+        }));
+
+        const Activity = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('polyline', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            points: "22,12 18,12 15,21 9,3 6,12 2,12" 
+        }));
+
+        const Heart = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('path', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            d: "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" 
+        }));
+
+        const Footprints = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('path', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            d: "M18 20V10M6 20V10M12 16V4M8 12l4-4 4 4" 
+        }));
+
+        const TrendingUp = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('polyline', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            points: "23 6 13.5 15.5 8.5 10.5 1 18" 
+        }), React.createElement('polyline', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            points: "17 6 23 6 23 12" 
+        }));
+
+        const Trophy = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('path', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            d: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" 
+        }));
+
+        const FamilyDashboard = () => {
+            const [familyData, setFamilyData] = useState(null);
+            const [selectedPeriod, setSelectedPeriod] = useState('week');
+            const [loading, setLoading] = useState(true);
+
+            // 家族データを取得
+            useEffect(() => {
+                const fetchFamilyData = async () => {
+                    try {
+                        // デモデータ（実際のアプリではAPIから取得）
+                        const demoFamilyData = {
+                            groupName: "{{ family_group.name if family_group else '田中ファミリー' }}",
+                            inviteCode: "{{ family_group.invite_code if family_group else 'ABC123' }}",
+                            totalMembers: {{ family_members|length if family_members else 3 }},
+                            members: [
+                                {
+                                    id: 1,
+                                    name: "もえ",
+                                    avatar: "👩",
+                                    status: "excellent",
+                                    todaySteps: 11250,
+                                    todayCalories: 2150,
+                                    heartRate: 72,
+                                    weeklyGoalProgress: 92,
+                                    monthlyRank: 1,
+                                    achievements: ["ステップマスター", "週間チャンピオン"]
+                                },
+                                {
+                                    id: 2,
+                                    name: "すずこ",
+                                    avatar: "👧",
+                                    status: "good",
+                                    todaySteps: 8750,
+                                    todayCalories: 1850,
+                                    heartRate: 68,
+                                    weeklyGoalProgress: 78,
+                                    monthlyRank: 2,
+                                    achievements: ["アクティブキッド"]
+                                },
+                                {
+                                    id: 3,
+                                    name: "なおひさ",
+                                    avatar: "👨",
+                                    status: "active",
+                                    todaySteps: 9500,
+                                    todayCalories: 2250,
+                                    heartRate: 75,
+                                    weeklyGoalProgress: 85,
+                                    monthlyRank: 3,
+                                    achievements: ["朝活チャンピオン", "一貫性王"]
+                                }
+                            ],
+                            familyStats: {
+                                totalSteps: 29500,
+                                totalCalories: 6250,
+                                avgHeartRate: 72,
+                                activeMembers: 3,
+                                weeklyGoal: 80000,
+                                weeklyProgress: 85
+                            }
+                        };
+                        
+                        setFamilyData(demoFamilyData);
+                        setLoading(false);
+                    } catch (error) {
+                        console.error('Error fetching family data:', error);
+                        setLoading(false);
+                    }
+                };
+
+                fetchFamilyData();
+            }, []);
+
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'excellent': return 'bg-green-400';
+                    case 'good': return 'bg-blue-400';
+                    case 'active': return 'bg-yellow-400';
+                    case 'warning': return 'bg-orange-400';
+                    default: return 'bg-gray-400';
+                }
+            };
+
+            const getStatusText = (status) => {
+                switch (status) {
+                    case 'excellent': return '絶好調';
+                    case 'good': return '良好';
+                    case 'active': return 'アクティブ';
+                    case 'warning': return '注意';
+                    default: return '通常';
+                }
+            };
+
+            if (loading) {
+                return React.createElement('div', { className: 'flex items-center justify-center min-h-screen' },
+                    React.createElement('div', { className: 'text-center' },
+                        React.createElement('div', { className: 'animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4' }),
+                        React.createElement('p', { className: 'text-slate-300' }, '家族データを読み込み中...')
+                    )
+                );
+            }
+
+            if (!familyData) {
+                return React.createElement('div', { className: 'text-center py-12' },
+                    React.createElement('p', { className: 'text-slate-300' }, '家族データを取得できませんでした。')
+                );
+            }
+
+            return React.createElement('div', { className: 'max-w-7xl mx-auto' },
+                
+                // 統一ナビゲーションバー
+                React.createElement(UnifiedNavigation, { currentPage: 'family' }),
+
+                // ヘッダー
+                React.createElement('div', { className: 'flex justify-between items-center mb-8' },
+                    React.createElement('div', null,
+                        React.createElement('h1', { className: 'text-3xl font-bold text-white mb-2' }, 
+                            `👨‍👩‍👧‍👦 ${familyData.groupName}`
+                        ),
+                        React.createElement('p', { className: 'text-slate-300' }, 
+                            `${familyData.totalMembers}人の家族 • 招待コード: ${familyData.inviteCode}`
+                        )
+                    ),
+                    React.createElement('div', { className: 'flex space-x-3' },
+                        ['week', 'month'].map(period => 
+                            React.createElement('button', {
+                                key: period,
+                                onClick: () => setSelectedPeriod(period),
+                                className: `px-4 py-2 rounded-lg transition-colors ${
+                                    selectedPeriod === period 
+                                        ? 'bg-blue-600 text-white' 
+                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                }`
+                            }, period === 'week' ? '今週' : '今月')
+                        )
+                    )
+                ),
+
+                // 家族統計サマリー
+                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-6 mb-8' },
+                    [
+                        { icon: Footprints, label: '合計歩数', value: familyData.familyStats.totalSteps.toLocaleString(), color: 'bg-blue-600' },
+                        { icon: Activity, label: '合計カロリー', value: `${familyData.familyStats.totalCalories.toLocaleString()}kcal`, color: 'bg-red-600' },
+                        { icon: Heart, label: '平均心拍数', value: `${familyData.familyStats.avgHeartRate} BPM`, color: 'bg-pink-600' },
+                        { icon: Users, label: 'アクティブメンバー', value: `${familyData.familyStats.activeMembers}/${familyData.totalMembers}人`, color: 'bg-green-600' }
+                    ].map((stat, index) =>
+                        React.createElement('div', {
+                            key: index,
+                            className: `${stat.color} rounded-2xl p-6 shadow-lg`
+                        },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement(stat.icon, { className: 'w-8 h-8' }),
+                                React.createElement('div', { className: 'text-right' },
+                                    React.createElement('div', { className: 'text-2xl font-bold' }, stat.value),
+                                    React.createElement('div', { className: 'text-sm opacity-90' }, stat.label)
+                                )
+                            )
+                        )
+                    )
+                ),
+
+                // 家族メンバーカード
+                React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8' },
+                    familyData.members.map((member) =>
+                        React.createElement('div', {
+                            key: member.id,
+                            className: 'bg-slate-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer',
+                            onClick: () => window.location.href = `/member/${member.name}/achievement`
+                        },
+                            // メンバーヘッダー
+                            React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                React.createElement('div', { className: 'flex items-center space-x-3' },
+                                    React.createElement('div', { className: 'text-3xl' }, member.avatar),
+                                    React.createElement('div', null,
+                                        React.createElement('h3', { className: 'text-lg font-semibold' }, member.name),
+                                        React.createElement('div', { className: 'flex items-center space-x-2' },
+                                            React.createElement('div', { className: `w-2 h-2 rounded-full ${getStatusColor(member.status)}` }),
+                                            React.createElement('span', { className: 'text-sm text-slate-300' }, getStatusText(member.status))
+                                        )
+                                    )
+                                ),
+                                React.createElement('div', { className: 'text-center' },
+                                    React.createElement('div', { className: 'text-2xl font-bold text-yellow-400' }, `#${member.monthlyRank}`),
+                                    React.createElement('div', { className: 'text-xs text-slate-400' }, '月間順位')
+                                )
+                            ),
+
+                            // 今日の数値
+                            React.createElement('div', { className: 'grid grid-cols-2 gap-4 mb-4' },
+                                React.createElement('div', { className: 'text-center' },
+                                    React.createElement('div', { className: 'text-xl font-bold text-blue-400' }, member.todaySteps.toLocaleString()),
+                                    React.createElement('div', { className: 'text-xs text-slate-400' }, '歩数')
+                                ),
+                                React.createElement('div', { className: 'text-center' },
+                                    React.createElement('div', { className: 'text-xl font-bold text-red-400' }, member.todayCalories),
+                                    React.createElement('div', { className: 'text-xs text-slate-400' }, 'kcal')
+                                )
+                            ),
+
+                            // 週間進捗
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('div', { className: 'flex justify-between mb-1' },
+                                    React.createElement('span', { className: 'text-sm text-slate-300' }, '週間目標'),
+                                    React.createElement('span', { className: 'text-sm font-medium' }, `${member.weeklyGoalProgress}%`)
+                                ),
+                                React.createElement('div', { className: 'w-full bg-slate-700 rounded-full h-2' },
+                                    React.createElement('div', {
+                                        className: 'bg-green-400 h-2 rounded-full transition-all duration-500',
+                                        style: { width: `${member.weeklyGoalProgress}%` }
+                                    })
+                                )
+                            ),
+
+                            // 実績バッジ
+                            React.createElement('div', { className: 'flex flex-wrap gap-1' },
+                                member.achievements.map((achievement, index) =>
+                                    React.createElement('span', {
+                                        key: index,
+                                        className: 'bg-yellow-600 text-yellow-100 text-xs px-2 py-1 rounded-full'
+                                    }, achievement)
+                                )
+                            )
+                        )
+                    )
+                ),
+
+                // 家族チャレンジと成果
+                React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
+                    // アクティブチャレンジ
+                    React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 shadow-lg' },
+                        React.createElement('h2', { className: 'text-xl font-bold mb-4 flex items-center' },
+                            React.createElement(Trophy, { className: 'w-6 h-6 mr-2 text-yellow-400' }),
+                            'アクティブチャレンジ'
+                        ),
+                        React.createElement('div', { className: 'space-y-4' },
+                            [
+                                { name: '週間80,000歩チャレンジ', progress: familyData.familyStats.weeklyProgress, target: '80,000歩' },
+                                { name: '全員目標達成', progress: 67, target: '7日連続' },
+                                { name: '家族ランニング', progress: 45, target: '週3回' }
+                            ].map((challenge, index) =>
+                                React.createElement('div', { key: index },
+                                    React.createElement('div', { className: 'flex justify-between mb-1' },
+                                        React.createElement('span', { className: 'text-sm font-medium' }, challenge.name),
+                                        React.createElement('span', { className: 'text-sm text-slate-400' }, `${challenge.progress}%`)
+                                    ),
+                                    React.createElement('div', { className: 'w-full bg-slate-700 rounded-full h-2' },
+                                        React.createElement('div', {
+                                            className: 'bg-purple-400 h-2 rounded-full transition-all duration-500',
+                                            style: { width: `${challenge.progress}%` }
+                                        })
+                                    )
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: 'mt-4' },
+                            React.createElement('a', {
+                                href: '/family/challenges',
+                                className: 'bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors inline-block'
+                            }, '新しいチャレンジを作成')
+                        )
+                    ),
+
+                    // 家族の成果
+                    React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 shadow-lg' },
+                        React.createElement('h2', { className: 'text-xl font-bold mb-4 flex items-center' },
+                            React.createElement(TrendingUp, { className: 'w-6 h-6 mr-2 text-green-400' }),
+                            '家族の成果'
+                        ),
+                        React.createElement('div', { className: 'space-y-3' },
+                            [
+                                { achievement: '30日連続全員活動', date: '2025年6月', type: 'gold' },
+                                { achievement: '週間目標10回達成', date: '2025年5月', type: 'silver' },
+                                { achievement: '家族チャレンジ初回完走', date: '2025年4月', type: 'bronze' }
+                            ].map((item, index) =>
+                                React.createElement('div', {
+                                    key: index,
+                                    className: 'flex items-center justify-between p-3 bg-slate-700 rounded-lg'
+                                },
+                                    React.createElement('div', null,
+                                        React.createElement('div', { className: 'font-medium' }, item.achievement),
+                                        React.createElement('div', { className: 'text-sm text-slate-400' }, item.date)
+                                    ),
+                                    React.createElement('div', {
+                                        className: `w-8 h-8 rounded-full flex items-center justify-center ${
+                                            item.type === 'gold' ? 'bg-yellow-600' : 
+                                            item.type === 'silver' ? 'bg-gray-400' : 'bg-orange-600'
+                                        }`
+                                    }, 
+                                        item.type === 'gold' ? '🥇' : 
+                                        item.type === 'silver' ? '🥈' : '🥉'
+                                    )
+                                )
+                            )
+                        ),
+                        React.createElement('div', { className: 'mt-4' },
+                            React.createElement('a', {
+                                href: '/goals/achievements',
+                                className: 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors inline-block'
+                            }, 'すべての実績を見る')
+                        )
+                    )
+                )
+            );
+        };
+
+        // React アプリをマウント
+        const root = createRoot(document.getElementById('family-dashboard-root'));
+        root.render(React.createElement(FamilyDashboard));
+    </script>
+</body>
+</html>
+{% endblock %}

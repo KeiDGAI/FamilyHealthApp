@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitbit連携設定 - 家族健康管理</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 統一ナビゲーション -->
+    {% include 'components/navigation.html' %}
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .bg-gradient-to-br { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
+        .bg-gradient-to-r { background: linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to, rgba(255, 255, 255, 0))); }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    </style>
+</head>
+<body class="dark">
+    <div id="fitbit-setup-root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+
+        // SVGアイコン定義
+        const ActivityIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+        );
+
+        const HeartIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+        );
+
+        const TrendingUpIcon = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+        );
+
+        const FitbitSetupPage = () => {
+            const [user] = useState({
+                username: '{{ user.username }}',
+                fitbit_connected: {{ 'true' if user.fitbit_connected else 'false' }}
+            });
+
+            const [connectionStatus, setConnectionStatus] = useState('disconnected');
+
+            useEffect(() => {
+                if (user.fitbit_connected) {
+                    setConnectionStatus('connected');
+                } else {
+                    setConnectionStatus('disconnected');
+                }
+            }, [user.fitbit_connected]);
+
+            const handleConnect = async () => {
+                try {
+                    const response = await fetch('/connect-fitbit');
+                    const data = await response.json();
+                    if (data.auth_url) {
+                        window.location.href = data.auth_url;
+                    }
+                } catch (error) {
+                    console.error('Fitbit接続エラー:', error);
+                }
+            };
+
+            const handleDisconnect = async () => {
+                try {
+                    const response = await fetch('/disconnect-fitbit', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success) {
+                        setConnectionStatus('disconnected');
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.error('Fitbit切断エラー:', error);
+                }
+            };
+
+            return (
+                React.createElement('div', { className: 'min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4' },
+                    
+                    // 統一ナビゲーションバー
+                    React.createElement(UnifiedNavigation, { currentPage: 'fitbit' }),
+
+                    // メインコンテンツ
+                    React.createElement('div', { className: 'max-w-4xl mx-auto' },
+                        
+                        // ヘッダー
+                        React.createElement('div', { className: 'text-center mb-8' },
+                            React.createElement('h1', { className: 'text-3xl font-bold text-white mb-2' }, 'Fitbit連携設定'),
+                            React.createElement('p', { className: 'text-slate-300' }, 'Fitbitデバイスと連携して健康データを自動取得しましょう')
+                        ),
+
+                        // 接続ステータス
+                        React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 mb-6 border border-slate-700/30' },
+                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                React.createElement('div', { className: 'flex items-center space-x-4' },
+                                    React.createElement('div', { className: `w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400' : 'bg-red-400'}` }),
+                                    React.createElement('div', null,
+                                        React.createElement('h3', { className: 'text-lg font-semibold text-white' }, 
+                                            connectionStatus === 'connected' ? 'Fitbit接続中' : 'Fitbit未接続'
+                                        ),
+                                        React.createElement('p', { className: 'text-slate-300 text-sm' }, 
+                                            connectionStatus === 'connected' 
+                                                ? '健康データが自動的に同期されています' 
+                                                : 'Fitbitアカウントに接続してデータを取得'
+                                        )
+                                    )
+                                ),
+                                connectionStatus === 'connected' 
+                                    ? React.createElement('button', {
+                                        onClick: handleDisconnect,
+                                        className: 'bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors'
+                                    }, '切断')
+                                    : React.createElement('button', {
+                                        onClick: handleConnect,
+                                        className: 'bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-white font-medium transition-colors'
+                                    }, 'Fitbitに接続')
+                            )
+                        ),
+
+                        // 取得できるデータの説明
+                        React.createElement('div', { className: 'grid md:grid-cols-3 gap-6 mb-8' },
+                            React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                                React.createElement('div', { className: 'flex items-center mb-4' },
+                                    React.createElement(ActivityIcon, { className: 'w-8 h-8 text-blue-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '活動データ')
+                                ),
+                                React.createElement('ul', { className: 'text-slate-300 space-y-2' },
+                                    React.createElement('li', null, '• 歩数・距離'),
+                                    React.createElement('li', null, '• 消費カロリー'),
+                                    React.createElement('li', null, '• 活動時間'),
+                                    React.createElement('li', null, '• 登った階数')
+                                )
+                            ),
+                            React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                                React.createElement('div', { className: 'flex items-center mb-4' },
+                                    React.createElement(HeartIcon, { className: 'w-8 h-8 text-red-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '心拍データ')
+                                ),
+                                React.createElement('ul', { className: 'text-slate-300 space-y-2' },
+                                    React.createElement('li', null, '• 安静時心拍数'),
+                                    React.createElement('li', null, '• 最大心拍数'),
+                                    React.createElement('li', null, '• 心拍変動(HRV)'),
+                                    React.createElement('li', null, '• 脂肪燃焼ゾーン')
+                                )
+                            ),
+                            React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                                React.createElement('div', { className: 'flex items-center mb-4' },
+                                    React.createElement(TrendingUpIcon, { className: 'w-8 h-8 text-green-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '長期トレンド')
+                                ),
+                                React.createElement('ul', { className: 'text-slate-300 space-y-2' },
+                                    React.createElement('li', null, '• 週間・月間統計'),
+                                    React.createElement('li', null, '• 目標達成率'),
+                                    React.createElement('li', null, '• 健康スコア'),
+                                    React.createElement('li', null, '• AI健康アドバイス')
+                                )
+                            )
+                        ),
+
+                        // 設定手順
+                        connectionStatus === 'disconnected' && React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/30' },
+                            React.createElement('h3', { className: 'text-lg font-semibold text-white mb-4' }, '接続手順'),
+                            React.createElement('ol', { className: 'text-slate-300 space-y-3' },
+                                React.createElement('li', { className: 'flex items-start' },
+                                    React.createElement('span', { className: 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3 mt-0.5' }, '1'),
+                                    React.createElement('span', null, '上の「Fitbitに接続」ボタンをクリック')
+                                ),
+                                React.createElement('li', { className: 'flex items-start' },
+                                    React.createElement('span', { className: 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3 mt-0.5' }, '2'),
+                                    React.createElement('span', null, 'Fitbitのログイン画面でアカウント情報を入力')
+                                ),
+                                React.createElement('li', { className: 'flex items-start' },
+                                    React.createElement('span', { className: 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3 mt-0.5' }, '3'),
+                                    React.createElement('span', null, 'データアクセス許可を承認')
+                                ),
+                                React.createElement('li', { className: 'flex items-start' },
+                                    React.createElement('span', { className: 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3 mt-0.5' }, '4'),
+                                    React.createElement('span', null, '接続完了後、自動的に健康データが同期開始')
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        const root = createRoot(document.getElementById('fitbit-setup-root'));
+        root.render(React.createElement(FitbitSetupPage));
+    </script>
+</body>
+</html>

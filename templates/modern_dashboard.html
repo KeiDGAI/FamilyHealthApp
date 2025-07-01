@@ -7,6 +7,126 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 統一ナビゲーション -->
+    {% raw %}
+    <script type="text/babel">
+        // 共通SVGアイコン
+        const Menu = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "3", y1: "6", x2: "21", y2: "6", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "12", x2: "21", y2: "12", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "18", x2: "21", y2: "18", strokeWidth: 2 }));
+
+        const X = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "18", y1: "6", x2: "6", y2: "18", strokeWidth: 2 }),
+           React.createElement('line', { x1: "6", y1: "6", x2: "18", y2: "18", strokeWidth: 2 }));
+
+        const Settings = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('circle', { cx: "12", cy: "12", r: "3", strokeWidth: 2 }),
+           React.createElement('path', { 
+               strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+               d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" 
+           }));
+
+        // 統一ナビゲーションコンポーネント
+        const UnifiedNavigation = ({ currentPage = '' }) => {
+            const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+
+            // ページに応じたハイライト色を設定
+            const getPageClass = (page) => {
+                if (currentPage === page) {
+                    return 'text-blue-400 hover:text-blue-300 transition-colors font-medium';
+                }
+                return 'text-slate-300 hover:text-white transition-colors';
+            };
+
+            return React.createElement('nav', { className: 'bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 rounded-xl mb-6 p-4' },
+                React.createElement('div', { className: 'flex items-center justify-between' },
+                    React.createElement('div', { className: 'flex items-center space-x-4' },
+                        React.createElement('h1', { className: 'text-xl font-bold text-white' }, '健康管理'),
+                        React.createElement('div', { className: 'hidden md:flex items-center space-x-6' },
+                            React.createElement('a', { 
+                                href: '/', 
+                                className: getPageClass('home')
+                            }, 'ホーム'),
+                            React.createElement('a', { 
+                                href: '/family', 
+                                className: getPageClass('family')
+                            }, '家族'),
+                            React.createElement('a', { 
+                                href: '/fitbit-setup', 
+                                className: currentPage === 'fitbit' ? 'text-green-400 hover:text-green-300 transition-colors font-medium' : 'text-green-400 hover:text-green-300 transition-colors'
+                            }, 'Fitbit連携'),
+                            React.createElement('a', { 
+                                href: '/family-management', 
+                                className: currentPage === 'management' ? 'text-purple-400 hover:text-purple-300 transition-colors font-medium' : 'text-purple-400 hover:text-purple-300 transition-colors'
+                            }, '家族管理'),
+                            React.createElement('a', { 
+                                href: '/profile', 
+                                className: getPageClass('profile')
+                            }, 'プロフィール')
+                        )
+                    ),
+                    React.createElement('div', { className: 'flex items-center space-x-3' },
+                        // デスクトップ用ログアウトボタン
+                        React.createElement('a', { 
+                            href: '/logout', 
+                            className: 'hidden md:block bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors' 
+                        }, 'ログアウト'),
+                        
+                        // 設定アイコン（デスクトップ）
+                        React.createElement('div', { className: 'hidden md:flex relative' },
+                            React.createElement('div', { className: 'w-3 h-3 bg-green-400 rounded-full absolute -top-1 -right-1 animate-pulse' }),
+                            React.createElement(Settings, { className: 'w-6 h-6 text-slate-300 hover:text-white cursor-pointer' })
+                        ),
+                        
+                        // モバイル用メニューボタン
+                        React.createElement('button', {
+                            onClick: () => setMobileMenuOpen(!mobileMenuOpen),
+                            className: 'md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors'
+                        }, mobileMenuOpen ? React.createElement(X, { className: 'w-6 h-6' }) : React.createElement(Menu, { className: 'w-6 h-6' }))
+                    )
+                ),
+                
+                // モバイルメニュー
+                mobileMenuOpen && React.createElement('div', { className: 'md:hidden mt-4 pt-4 border-t border-slate-700' },
+                    React.createElement('div', { className: 'flex flex-col space-y-3' },
+                        React.createElement('a', { 
+                            href: '/', 
+                            className: getPageClass('home') + ' py-2'
+                        }, 'ホーム'),
+                        React.createElement('a', { 
+                            href: '/family', 
+                            className: getPageClass('family') + ' py-2'
+                        }, '家族'),
+                        React.createElement('a', { 
+                            href: '/fitbit-setup', 
+                            className: 'text-green-400 hover:text-green-300 transition-colors py-2' 
+                        }, 'Fitbit連携'),
+                        React.createElement('a', { 
+                            href: '/family-management', 
+                            className: 'text-purple-400 hover:text-purple-300 transition-colors py-2' 
+                        }, '家族管理'),
+                        React.createElement('a', { 
+                            href: '/profile', 
+                            className: getPageClass('profile') + ' py-2'
+                        }, 'プロフィール'),
+                        React.createElement('a', { 
+                            href: '/logout', 
+                            className: 'bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors text-center' 
+                        }, 'ログアウト')
+                    )
+                )
+            );
+        };
+
+        // グローバルスコープに追加
+        window.UnifiedNavigation = UnifiedNavigation;
+    </script>
+    {% endraw %}
 
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
@@ -117,8 +237,20 @@
                d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" 
            }));
 
+        const Menu = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "3", y1: "6", x2: "21", y2: "6", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "12", x2: "21", y2: "12", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "18", x2: "21", y2: "18", strokeWidth: 2 }));
+
+        const X = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "18", y1: "6", x2: "6", y2: "18", strokeWidth: 2 }),
+           React.createElement('line', { x1: "6", y1: "6", x2: "18", y2: "18", strokeWidth: 2 }));
+
         const FamilyHealthDashboard = () => {
             const [selectedMember, setSelectedMember] = useState('me');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
             
             // モックデータ（提供されたコードと完全に同じ）
             const familyMembers = [
@@ -197,17 +329,15 @@
             return (
                 React.createElement('div', { className: 'min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white p-4' },
                     
+                    // 統一ナビゲーションバー
+                    React.createElement(UnifiedNavigation, { currentPage: 'home' }),
+
+
                     // ヘッダー
                     React.createElement('div', { className: 'flex justify-between items-center mb-6' },
                         React.createElement('div', null,
                             React.createElement('h1', { className: 'text-2xl font-bold text-white mb-1' }, 'おかえりなさい！'),
                             React.createElement('p', { className: 'text-slate-300' }, '今日も一緒に健康になりましょう')
-                        ),
-                        React.createElement('div', { className: 'flex items-center space-x-3' },
-                            React.createElement('div', { className: 'relative' },
-                                React.createElement('div', { className: 'w-3 h-3 bg-green-400 rounded-full absolute -top-1 -right-1 animate-pulse' }),
-                                React.createElement(Settings, { className: 'w-6 h-6 text-slate-300' })
-                            )
                         )
                     ),
 
@@ -221,7 +351,13 @@
                             familyMembers.map((member) =>
                                 React.createElement('div', {
                                     key: member.id,
-                                    onClick: () => setSelectedMember(member.id),
+                                    onClick: () => {
+                                        setSelectedMember(member.id);
+                                        // 目標達成状況ページに遷移
+                                        setTimeout(() => {
+                                            window.location.href = `/member/${member.name}/achievement`;
+                                        }, 200);
+                                    },
                                     className: `flex-shrink-0 p-3 rounded-xl cursor-pointer transition-all duration-300 ${
                                         selectedMember === member.id 
                                             ? 'bg-blue-600 shadow-lg shadow-blue-600/30' 
@@ -258,7 +394,10 @@
                         // 詳細統計グリッド
                         React.createElement('div', { className: 'grid grid-cols-2 gap-4 mb-6' },
                             // 歩数
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Footprints, { className: 'w-6 h-6 text-green-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '歩数')
@@ -278,7 +417,10 @@
                             ),
 
                             // カロリー
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Zap, { className: 'w-6 h-6 text-red-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, 'カロリー')
@@ -298,7 +440,10 @@
                             ),
 
                             // 心拍数
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Heart, { className: 'w-6 h-6 text-pink-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '心拍数')
@@ -312,7 +457,10 @@
                             ),
 
                             // 活動時間
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Activity, { className: 'w-6 h-6 text-yellow-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '活動時間')
@@ -383,18 +531,34 @@
                     ),
 
                     // クイックアクション
-                    React.createElement('div', { className: 'grid grid-cols-2 gap-4' },
-                        React.createElement('button', { 
-                            className: 'bg-blue-600 hover:bg-blue-700 rounded-xl p-4 flex items-center justify-center space-x-2 transition-colors' 
+                    React.createElement('div', { className: 'grid grid-cols-2 gap-3' },
+                        React.createElement('a', { 
+                            href: '/goals',
+                            className: 'bg-blue-600 hover:bg-blue-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
                         },
-                            React.createElement(TrendingUp, { className: 'w-5 h-5' }),
-                            React.createElement('span', null, '詳細分析')
+                            React.createElement(Target, { className: 'w-4 h-4' }),
+                            React.createElement('span', { className: 'text-sm' }, '目標設定')
                         ),
-                        React.createElement('button', { 
-                            className: 'bg-purple-600 hover:bg-purple-700 rounded-xl p-4 flex items-center justify-center space-x-2 transition-colors' 
+                        React.createElement('a', { 
+                            href: '/goals/achievements',
+                            className: 'bg-green-600 hover:bg-green-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
                         },
-                            React.createElement(Calendar, { className: 'w-5 h-5' }),
-                            React.createElement('span', null, 'チャレンジ')
+                            React.createElement(TrendingUp, { className: 'w-4 h-4' }),
+                            React.createElement('span', { className: 'text-sm' }, '実績確認')
+                        ),
+                        React.createElement('a', { 
+                            href: '/analytics',
+                            className: 'bg-orange-600 hover:bg-orange-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
+                        },
+                            React.createElement(Activity, { className: 'w-4 h-4' }),
+                            React.createElement('span', { className: 'text-sm' }, '詳細分析')
+                        ),
+                        React.createElement('a', { 
+                            href: '/family/challenges',
+                            className: 'bg-purple-600 hover:bg-purple-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
+                        },
+                            React.createElement(Users, { className: 'w-4 h-4' }),
+                            React.createElement('span', { className: 'text-sm' }, '家族チャレンジ')
                         )
                     )
                 )
