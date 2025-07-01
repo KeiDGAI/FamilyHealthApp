@@ -1460,3 +1460,36 @@ def health_metrics():
     return render_template('health_metrics.html', user=user)
 
 
+@app.route('/fitbit-setup')
+def fitbit_setup():
+    """Fitbit連携設定ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    return render_template('fitbit_setup.html', user=user)
+
+
+@app.route('/family-management')
+def family_management():
+    """家族管理・招待承認ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    # 家族グループ情報とメンバー情報を取得
+    family_group = user.family_group
+    pending_invitations = []  # 将来の機能拡張用
+    
+    return render_template('family_management.html', 
+                         user=user, 
+                         family_group=family_group,
+                         pending_invitations=pending_invitations)
+
+
