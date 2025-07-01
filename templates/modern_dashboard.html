@@ -264,7 +264,10 @@
                         // 詳細統計グリッド
                         React.createElement('div', { className: 'grid grid-cols-2 gap-4 mb-6' },
                             // 歩数
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Footprints, { className: 'w-6 h-6 text-green-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '歩数')
@@ -284,7 +287,10 @@
                             ),
 
                             // カロリー
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Zap, { className: 'w-6 h-6 text-red-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, 'カロリー')
@@ -304,7 +310,10 @@
                             ),
 
                             // 心拍数
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Heart, { className: 'w-6 h-6 text-pink-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '心拍数')
@@ -318,7 +327,10 @@
                             ),
 
                             // 活動時間
-                            React.createElement('div', { className: 'bg-slate-800 rounded-xl p-4 border border-slate-700' },
+                            React.createElement('div', { 
+                                className: 'bg-slate-800 rounded-xl p-4 border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors',
+                                onClick: () => window.location.href = '/health-metrics'
+                            },
                                 React.createElement('div', { className: 'flex items-center justify-between mb-3' },
                                     React.createElement(Activity, { className: 'w-6 h-6 text-yellow-400' }),
                                     React.createElement('span', { className: 'text-sm text-slate-300' }, '活動時間')

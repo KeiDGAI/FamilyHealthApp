@@ -1429,4 +1429,34 @@ def analytics():
     
     return render_template('analytics.html', user=user)
 
+@app.route('/member/<member_name>/achievement')
+def member_achievement(member_name):
+    """家族メンバーの目標達成状況ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    # デモデータでメンバー情報を生成
+    member_data = {
+        'name': member_name,
+        'avatar': '👩' if member_name == 'もえ' else '👨' if member_name == 'なおひさ' else '👧'
+    }
+    
+    return render_template('member_achievement.html', member=member_data, user=user)
+
+@app.route('/health-metrics')
+def health_metrics():
+    """健康指標詳細ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    return render_template('health_metrics.html', user=user)
+
 
