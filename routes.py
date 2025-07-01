@@ -452,9 +452,9 @@ def family():
             'invite_code': 'DEMO1234'
         }
         
-        return render_template('family_demo.html',
+        return render_template('family_modern.html',
                              family_group=demo_family_group,
-                             family_members_data=demo_members,
+                             family_members=demo_members,
                              stats=demo_stats,
                              demo_mode=True)
     
@@ -473,10 +473,10 @@ def family():
     family_group = user.family_group
     family_members_data = get_family_members_with_data(user)
     
-    return render_template('family_demo.html', 
+    return render_template('family_modern.html', 
                          user=user, 
                          family_group=family_group,
-                         family_members_data=family_members_data,
+                         family_members=family_members_data,
                          demo_mode=False)
 
 @app.route('/family/<int:user_id>')
@@ -718,7 +718,7 @@ def profile():
         session.clear()
         return redirect(url_for('login'))
     
-    return render_template('profile.html', user=user)
+    return render_template('profile_modern.html', user=user)
 
 # Fitbit OAuth Routes
 @app.route('/connect_fitbit')
@@ -1416,5 +1416,17 @@ def family_challenges():
                          family_group=family_group, 
                          family_members=family_members,
                          family_stats=family_stats)
+
+@app.route('/analytics')
+def analytics():
+    """詳細分析ページ"""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return redirect(url_for('login'))
+    
+    return render_template('analytics.html', user=user)
 
 

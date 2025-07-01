@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block title %}詳細分析 - 家族健康管理{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ja" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>詳細分析ダッシュボード</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 min-h-screen text-white">
+    <div id="analytics-root" class="p-6"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+
+        // SVGアイコンコンポーネント
+        const TrendingUp = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('polyline', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            points: "23 6 13.5 15.5 8.5 10.5 1 18" 
+        }), React.createElement('polyline', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            points: "17 6 23 6 23 12" 
+        }));
+
+        const BarChart = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "18", y1: "20", x2: "18", y2: "10"
+        }), React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "12", y1: "20", x2: "12", y2: "4"
+        }), React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "6", y1: "20", x2: "6", y2: "14"
+        }));
+
+        const Calendar = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('rect', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x: "3", y: "4", width: "18", height: "18", rx: "2", ry: "2"
+        }), React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "16", y1: "2", x2: "16", y2: "6"
+        }), React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "8", y1: "2", x2: "8", y2: "6"
+        }), React.createElement('line', { 
+            strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, 
+            x1: "3", y1: "10", x2: "21", y2: "10"
+        }));
+
+        const AnalyticsDashboard = () => {
+            const [selectedPeriod, setSelectedPeriod] = useState('month');
+            const [selectedMetric, setSelectedMetric] = useState('steps');
+            const [selectedMember, setSelectedMember] = useState('all');
+            const [chartData, setChartData] = useState(null);
+
+            // チャートデータ生成
+            useEffect(() => {
+                generateChartData();
+            }, [selectedPeriod, selectedMetric, selectedMember]);
+
+            const generateChartData = () => {
+                const periods = {
+                    week: 7,
+                    month: 30,
+                    quarter: 90,
+                    year: 365
+                };
+
+                const labels = [];
+                const data = [];
+                const days = periods[selectedPeriod];
+
+                for (let i = days - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    
+                    if (selectedPeriod === 'week') {
+                        labels.push(date.toLocaleDateString('ja-JP', { weekday: 'short' }));
+                    } else if (selectedPeriod === 'month') {
+                        labels.push(date.getDate());
+                    } else if (selectedPeriod === 'quarter') {
+                        labels.push(date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+                    } else {
+                        labels.push(date.toLocaleDateString('ja-JP', { month: 'short' }));
+                    }
+
+                    // デモデータ生成
+                    let value;
+                    switch (selectedMetric) {
+                        case 'steps':
+                            value = Math.floor(Math.random() * 5000) + 7000;
+                            break;
+                        case 'calories':
+                            value = Math.floor(Math.random() * 800) + 1600;
+                            break;
+                        case 'heartRate':
+                            value = Math.floor(Math.random() * 20) + 65;
+                            break;
+                        case 'hrv':
+                            value = Math.floor(Math.random() * 20) + 40;
+                            break;
+                        default:
+                            value = Math.floor(Math.random() * 100);
+                    }
+                    data.push(value);
+                }
+
+                setChartData({ labels, data });
+            };
+
+            const renderChart = () => {
+                if (!chartData) return null;
+
+                const canvasId = `chart-${selectedMetric}-${selectedPeriod}`;
+                
+                useEffect(() => {
+                    const canvas = document.getElementById(canvasId);
+                    if (!canvas) return;
+
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 既存のチャートを破棄
+                    if (canvas.chart) {
+                        canvas.chart.destroy();
+                    }
+
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
+                    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)');
+
+                    const chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [{
+                                label: getMetricLabel(selectedMetric),
+                                data: chartData.data,
+                                borderColor: 'rgb(59, 130, 246)',
+                                backgroundColor: gradient,
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: 'rgb(59, 130, 246)',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                pointRadius: 5,
+                                pointHoverRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: '#fff'
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    },
+                                    ticks: {
+                                        color: '#fff'
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    canvas.chart = chart;
+                }, [chartData]);
+
+                return React.createElement('canvas', { 
+                    id: canvasId, 
+                    width: "400", 
+                    height: "200" 
+                });
+            };
+
+            const getMetricLabel = (metric) => {
+                switch (metric) {
+                    case 'steps': return '歩数';
+                    case 'calories': return 'カロリー (kcal)';
+                    case 'heartRate': return '心拍数 (BPM)';
+                    case 'hrv': return 'HRV';
+                    default: return metric;
+                }
+            };
+
+            const getMetricColor = (metric) => {
+                switch (metric) {
+                    case 'steps': return 'text-blue-400';
+                    case 'calories': return 'text-red-400';
+                    case 'heartRate': return 'text-pink-400';
+                    case 'hrv': return 'text-green-400';
+                    default: return 'text-blue-400';
+                }
+            };
+
+            const calculateStats = () => {
+                if (!chartData) return { avg: 0, max: 0, min: 0, trend: 0 };
+                
+                const data = chartData.data;
+                const avg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
+                const max = Math.max(...data);
+                const min = Math.min(...data);
+                
+                // 簡単なトレンド計算（最初の半分と後半の平均を比較）
+                const firstHalf = data.slice(0, Math.floor(data.length / 2));
+                const secondHalf = data.slice(Math.floor(data.length / 2));
+                const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+                const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+                const trend = Math.round(((secondAvg - firstAvg) / firstAvg) * 100);
+
+                return { avg, max, min, trend };
+            };
+
+            const stats = calculateStats();
+
+            return React.createElement('div', { className: 'max-w-7xl mx-auto' },
+                // ヘッダー
+                React.createElement('div', { className: 'flex justify-between items-center mb-8' },
+                    React.createElement('div', null,
+                        React.createElement('h1', { className: 'text-3xl font-bold text-white mb-2' }, '📊 詳細分析'),
+                        React.createElement('p', { className: 'text-slate-300' }, '長期間の健康データトレンドと詳細な分析')
+                    ),
+                    React.createElement('a', {
+                        href: '/',
+                        className: 'bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors'
+                    }, '← ダッシュボードに戻る')
+                ),
+
+                // フィルターコントロール
+                React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 mb-8 shadow-lg' },
+                    React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-3 gap-6' },
+                        // 期間選択
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, '期間'),
+                            React.createElement('select', {
+                                value: selectedPeriod,
+                                onChange: (e) => setSelectedPeriod(e.target.value),
+                                className: 'w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500'
+                            },
+                                React.createElement('option', { value: 'week' }, '過去7日間'),
+                                React.createElement('option', { value: 'month' }, '過去30日間'),
+                                React.createElement('option', { value: 'quarter' }, '過去3ヶ月'),
+                                React.createElement('option', { value: 'year' }, '過去1年')
+                            )
+                        ),
+
+                        // 指標選択
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, '指標'),
+                            React.createElement('select', {
+                                value: selectedMetric,
+                                onChange: (e) => setSelectedMetric(e.target.value),
+                                className: 'w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500'
+                            },
+                                React.createElement('option', { value: 'steps' }, '歩数'),
+                                React.createElement('option', { value: 'calories' }, '消費カロリー'),
+                                React.createElement('option', { value: 'heartRate' }, '安静時心拍数'),
+                                React.createElement('option', { value: 'hrv' }, '心拍変動(HRV)')
+                            )
+                        ),
+
+                        // メンバー選択
+                        React.createElement('div', null,
+                            React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'メンバー'),
+                            React.createElement('select', {
+                                value: selectedMember,
+                                onChange: (e) => setSelectedMember(e.target.value),
+                                className: 'w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg focus:outline-none focus:border-blue-500'
+                            },
+                                React.createElement('option', { value: 'all' }, '全体平均'),
+                                React.createElement('option', { value: '1' }, 'もえ'),
+                                React.createElement('option', { value: '2' }, 'すずこ'),
+                                React.createElement('option', { value: '3' }, 'なおひさ')
+                            )
+                        )
+                    )
+                ),
+
+                // 統計サマリー
+                React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-4 gap-6 mb-8' },
+                    [
+                        { label: '平均値', value: stats.avg, icon: '📊' },
+                        { label: '最大値', value: stats.max, icon: '📈' },
+                        { label: '最小値', value: stats.min, icon: '📉' },
+                        { label: 'トレンド', value: `${stats.trend > 0 ? '+' : ''}${stats.trend}%`, icon: stats.trend >= 0 ? '📈' : '📉' }
+                    ].map((stat, index) =>
+                        React.createElement('div', {
+                            key: index,
+                            className: 'bg-slate-800 rounded-2xl p-6 shadow-lg'
+                        },
+                            React.createElement('div', { className: 'flex items-center justify-between mb-2' },
+                                React.createElement('span', { className: 'text-slate-400 text-sm' }, stat.label),
+                                React.createElement('span', { className: 'text-2xl' }, stat.icon)
+                            ),
+                            React.createElement('div', { className: `text-2xl font-bold ${getMetricColor(selectedMetric)}` }, stat.value)
+                        )
+                    )
+                ),
+
+                // メインチャート
+                React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 mb-8 shadow-lg' },
+                    React.createElement('div', { className: 'flex items-center justify-between mb-6' },
+                        React.createElement('h2', { className: 'text-xl font-bold flex items-center' },
+                            React.createElement(TrendingUp, { className: 'w-6 h-6 mr-2' }),
+                            `${getMetricLabel(selectedMetric)}の推移`
+                        ),
+                        React.createElement('div', { className: 'flex space-x-2' },
+                            ['line', 'bar'].map(type =>
+                                React.createElement('button', {
+                                    key: type,
+                                    className: `px-3 py-1 rounded-lg text-sm transition-colors ${
+                                        type === 'line' 
+                                            ? 'bg-blue-600 text-white' 
+                                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                    }`
+                                }, type === 'line' ? '線グラフ' : '棒グラフ')
+                            )
+                        )
+                    ),
+                    React.createElement('div', { className: 'h-96' }, renderChart())
+                ),
+
+                // 詳細分析
+                React.createElement('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-6' },
+                    // パフォーマンス分析
+                    React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 shadow-lg' },
+                        React.createElement('h2', { className: 'text-xl font-bold mb-4 flex items-center' },
+                            React.createElement(BarChart, { className: 'w-6 h-6 mr-2' }),
+                            'パフォーマンス分析'
+                        ),
+                        React.createElement('div', { className: 'space-y-4' },
+                            [
+                                { label: '目標達成率', value: '73%', color: 'bg-green-600' },
+                                { label: '一貫性スコア', value: '8.2/10', color: 'bg-blue-600' },
+                                { label: '改善率', value: '+12%', color: 'bg-purple-600' },
+                                { label: '週間アクティブ日', value: '5.2日', color: 'bg-yellow-600' }
+                            ].map((metric, index) =>
+                                React.createElement('div', {
+                                    key: index,
+                                    className: 'flex items-center justify-between p-3 bg-slate-700 rounded-lg'
+                                },
+                                    React.createElement('span', null, metric.label),
+                                    React.createElement('span', {
+                                        className: `px-3 py-1 rounded-full text-white text-sm ${metric.color}`
+                                    }, metric.value)
+                                )
+                            )
+                        )
+                    ),
+
+                    // インサイト
+                    React.createElement('div', { className: 'bg-slate-800 rounded-2xl p-6 shadow-lg' },
+                        React.createElement('h2', { className: 'text-xl font-bold mb-4 flex items-center' },
+                            React.createElement(Calendar, { className: 'w-6 h-6 mr-2' }),
+                            'インサイト'
+                        ),
+                        React.createElement('div', { className: 'space-y-4' },
+                            [
+                                { 
+                                    title: '最も活発な時期', 
+                                    desc: '過去30日間で最も良いパフォーマンスを記録したのは先週でした。',
+                                    type: 'success'
+                                },
+                                { 
+                                    title: '改善のチャンス', 
+                                    desc: '週末の活動量が平日より20%低下しています。', 
+                                    type: 'warning'
+                                },
+                                { 
+                                    title: '継続の力', 
+                                    desc: '14日連続で目標を達成中です。素晴らしい一貫性です！', 
+                                    type: 'info'
+                                }
+                            ].map((insight, index) =>
+                                React.createElement('div', {
+                                    key: index,
+                                    className: `p-4 rounded-lg border-l-4 ${
+                                        insight.type === 'success' ? 'bg-green-900 border-green-400' :
+                                        insight.type === 'warning' ? 'bg-yellow-900 border-yellow-400' :
+                                        'bg-blue-900 border-blue-400'
+                                    }`
+                                },
+                                    React.createElement('h4', { className: 'font-semibold mb-1' }, insight.title),
+                                    React.createElement('p', { className: 'text-sm text-slate-300' }, insight.desc)
+                                )
+                            )
+                        )
+                    )
+                ),
+
+                // エクスポートボタン
+                React.createElement('div', { className: 'mt-8 text-center' },
+                    React.createElement('button', {
+                        className: 'bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium mr-4'
+                    }, 'データをエクスポート'),
+                    React.createElement('button', {
+                        className: 'bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg transition-colors font-medium'
+                    }, 'レポートを生成')
+                )
+            );
+        };
+
+        // React アプリをマウント
+        const root = createRoot(document.getElementById('analytics-root'));
+        root.render(React.createElement(AnalyticsDashboard));
+    </script>
+</body>
+</html>
+{% endblock %}

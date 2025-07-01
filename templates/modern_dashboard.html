@@ -405,8 +405,15 @@
                             React.createElement('span', { className: 'text-sm' }, '実績確認')
                         ),
                         React.createElement('a', { 
+                            href: '/analytics',
+                            className: 'bg-orange-600 hover:bg-orange-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
+                        },
+                            React.createElement(Activity, { className: 'w-4 h-4' }),
+                            React.createElement('span', { className: 'text-sm' }, '詳細分析')
+                        ),
+                        React.createElement('a', { 
                             href: '/family/challenges',
-                            className: 'bg-purple-600 hover:bg-purple-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline col-span-2' 
+                            className: 'bg-purple-600 hover:bg-purple-700 rounded-xl p-3 flex items-center justify-center space-x-2 transition-colors text-white no-underline' 
                         },
                             React.createElement(Users, { className: 'w-4 h-4' }),
                             React.createElement('span', { className: 'text-sm' }, '家族チャレンジ')
