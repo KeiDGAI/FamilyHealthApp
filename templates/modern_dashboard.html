@@ -117,8 +117,20 @@
                d: "M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" 
            }));
 
+        const Menu = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "3", y1: "6", x2: "21", y2: "6", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "12", x2: "21", y2: "12", strokeWidth: 2 }),
+           React.createElement('line', { x1: "3", y1: "18", x2: "21", y2: "18", strokeWidth: 2 }));
+
+        const X = ({ className = "w-6 h-6" }) => React.createElement('svg', { 
+            className, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" 
+        }, React.createElement('line', { x1: "18", y1: "6", x2: "6", y2: "18", strokeWidth: 2 }),
+           React.createElement('line', { x1: "6", y1: "6", x2: "18", y2: "18", strokeWidth: 2 }));
+
         const FamilyHealthDashboard = () => {
             const [selectedMember, setSelectedMember] = useState('me');
+            const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
             
             // モックデータ（提供されたコードと完全に同じ）
             const familyMembers = [
@@ -225,10 +237,55 @@
                                     }, 'プロフィール')
                                 )
                             ),
-                            React.createElement('a', { 
-                                href: '/logout', 
-                                className: 'bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors' 
-                            }, 'ログアウト')
+                            React.createElement('div', { className: 'flex items-center space-x-3' },
+                                // デスクトップ用ログアウトボタン
+                                React.createElement('a', { 
+                                    href: '/logout', 
+                                    className: 'hidden md:block bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors' 
+                                }, 'ログアウト'),
+                                
+                                // 設定アイコン（デスクトップ）
+                                React.createElement('div', { className: 'hidden md:flex relative' },
+                                    React.createElement('div', { className: 'w-3 h-3 bg-green-400 rounded-full absolute -top-1 -right-1 animate-pulse' }),
+                                    React.createElement(Settings, { className: 'w-6 h-6 text-slate-300 hover:text-white cursor-pointer' })
+                                ),
+                                
+                                // モバイル用メニューボタン
+                                React.createElement('button', {
+                                    onClick: () => setMobileMenuOpen(!mobileMenuOpen),
+                                    className: 'md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors'
+                                }, mobileMenuOpen ? React.createElement(X, { className: 'w-6 h-6' }) : React.createElement(Menu, { className: 'w-6 h-6' }))
+                            )
+                        ),
+                        
+                        // モバイルメニュー
+                        mobileMenuOpen && React.createElement('div', { className: 'md:hidden mt-4 pt-4 border-t border-slate-700' },
+                            React.createElement('div', { className: 'flex flex-col space-y-3' },
+                                React.createElement('a', { 
+                                    href: '/', 
+                                    className: 'text-blue-400 hover:text-blue-300 transition-colors font-medium py-2' 
+                                }, 'ホーム'),
+                                React.createElement('a', { 
+                                    href: '/family', 
+                                    className: 'text-slate-300 hover:text-white transition-colors py-2' 
+                                }, '家族'),
+                                React.createElement('a', { 
+                                    href: '/fitbit-setup', 
+                                    className: 'text-green-400 hover:text-green-300 transition-colors py-2' 
+                                }, 'Fitbit連携'),
+                                React.createElement('a', { 
+                                    href: '/family-management', 
+                                    className: 'text-purple-400 hover:text-purple-300 transition-colors py-2' 
+                                }, '家族管理'),
+                                React.createElement('a', { 
+                                    href: '/profile', 
+                                    className: 'text-slate-300 hover:text-white transition-colors py-2' 
+                                }, 'プロフィール'),
+                                React.createElement('a', { 
+                                    href: '/logout', 
+                                    className: 'bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white transition-colors text-center' 
+                                }, 'ログアウト')
+                            )
                         )
                     ),
 
@@ -237,12 +294,6 @@
                         React.createElement('div', null,
                             React.createElement('h1', { className: 'text-2xl font-bold text-white mb-1' }, 'おかえりなさい！'),
                             React.createElement('p', { className: 'text-slate-300' }, '今日も一緒に健康になりましょう')
-                        ),
-                        React.createElement('div', { className: 'flex items-center space-x-3' },
-                            React.createElement('div', { className: 'relative' },
-                                React.createElement('div', { className: 'w-3 h-3 bg-green-400 rounded-full absolute -top-1 -right-1 animate-pulse' }),
-                                React.createElement(Settings, { className: 'w-6 h-6 text-slate-300' })
-                            )
                         )
                     ),
 
