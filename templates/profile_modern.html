@@ -139,6 +139,10 @@
             ];
 
             return React.createElement('div', { className: 'max-w-6xl mx-auto' },
+                
+                // 統一ナビゲーションバー
+                React.createElement(UnifiedNavigation, { currentPage: 'profile' }),
+                
                 // ヘッダー
                 React.createElement('div', { className: 'flex justify-between items-center mb-8' },
                     React.createElement('div', null,
