@@ -146,7 +146,7 @@ Preferred communication style: Simple, everyday language.
 - **June 28, 2025**: デモデータシステム実装完了
   - demo_data.py作成：3人家族（もえ、すずこ、なおひさ）の10日間健康データ生成
   - app.config['USE_DEMO_DATA']フラグでデモ/本番モード切り替え
-  - family_demo.htmlテンプレート新規作成：デモデータ・実データ対応統一表示
+  - family_demo.htmlテンプレート新規作成（後に不要となり削除）: デモデータ・実データ対応統一表示
   - 各メンバー別に歩数・カロリー・心拍数・HRVの現実的データ範囲生成
   - 5日間のデータテーブル表示とAI健康コメント機能
   - 環境変数USE_DEMO_DATAで本番環境での無効化対応
