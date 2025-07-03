@@ -105,6 +105,10 @@
                                 className: getPageClass('family')
                             }, '家族'),
                             React.createElement('a', { 
+                                href: '/goals', 
+                                className: currentPage === 'goals' ? 'text-blue-400 hover:text-blue-300 transition-colors font-medium' : 'text-blue-400 hover:text-blue-300 transition-colors'
+                            }, '目標設定'),
+                            React.createElement('a', { 
                                 href: '/fitbit-setup', 
                                 className: currentPage === 'fitbit' ? 'text-green-400 hover:text-green-300 transition-colors font-medium' : 'text-green-400 hover:text-green-300 transition-colors'
                             }, 'Fitbit連携'),
@@ -150,6 +154,10 @@
                             href: '/family', 
                             className: getPageClass('family') + ' py-2'
                         }, '家族'),
+                        React.createElement('a', { 
+                            href: '/goals', 
+                            className: 'text-blue-400 hover:text-blue-300 transition-colors py-2' 
+                        }, '目標設定'),
                         React.createElement('a', { 
                             href: '/fitbit-setup', 
                             className: 'text-green-400 hover:text-green-300 transition-colors py-2' 
