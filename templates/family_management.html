@@ -76,11 +76,12 @@
             const [showInviteCode, setShowInviteCode] = useState(false);
             const [newGroupName, setNewGroupName] = useState('');
             const [joinCode, setJoinCode] = useState('');
-            const [pendingInvitations] = useState([
-                // デモデータ - 将来的にバックエンドから取得
-                { id: 1, username: 'たろう', email: 'taro@example.com', requested_at: '2024-06-30' },
-                { id: 2, username: 'はなこ', email: 'hanako@example.com', requested_at: '2024-06-29' }
-            ]);
+            const [pendingInvitations, setPendingInvitations] = useState([]);
+            const [showInviteForm, setShowInviteForm] = useState(false);
+            const [inviteEmail, setInviteEmail] = useState('');
+            const [groupOption, setGroupOption] = useState('current'); // 'current', 'new', 'none'
+            const [newInviteGroupName, setNewInviteGroupName] = useState('');
+            const [inviteLoading, setInviteLoading] = useState(false);
 
             const copyInviteCode = () => {
                 navigator.clipboard.writeText(familyGroup.invite_code);
@@ -104,6 +105,67 @@
                     console.error('グループ作成エラー:', error);
                 }
             };
+
+            const sendInvitation = async () => {
+                if (!inviteEmail.trim()) {
+                    alert('メールアドレスを入力してください');
+                    return;
+                }
+                
+                if (groupOption === 'new' && !newInviteGroupName.trim()) {
+                    alert('新しいグループ名を入力してください');
+                    return;
+                }
+                
+                setInviteLoading(true);
+                
+                try {
+                    const response = await fetch('/send-invitation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: inviteEmail,
+                            group_option: groupOption,
+                            new_group_name: newInviteGroupName
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('招待メールを送信しました！');
+                        setInviteEmail('');
+                        setNewInviteGroupName('');
+                        setShowInviteForm(false);
+                        // 招待一覧を更新
+                        fetchPendingInvitations();
+                    } else {
+                        alert('エラー: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('招待送信エラー:', error);
+                    alert('招待送信中にエラーが発生しました');
+                } finally {
+                    setInviteLoading(false);
+                }
+            };
+
+            const fetchPendingInvitations = async () => {
+                try {
+                    const response = await fetch('/api/invitations/pending');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setPendingInvitations(data.invitations || []);
+                    }
+                } catch (error) {
+                    console.error('招待一覧取得エラー:', error);
+                }
+            };
+
+            // 初回読み込み時に招待一覧を取得
+            useEffect(() => {
+                fetchPendingInvitations();
+            }, []);
 
             const joinGroup = async () => {
                 if (!joinCode.trim()) return;
@@ -236,6 +298,123 @@
                                         disabled: !joinCode.trim(),
                                         className: 'w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 px-4 py-2 rounded-lg text-white transition-colors'
                                     }, 'グループに参加')
+                                )
+                            )
+                        ),
+
+                        // 招待メール送信フォーム
+                        React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 mb-6 border border-slate-700/30' },
+                            React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                React.createElement('div', { className: 'flex items-center' },
+                                    React.createElement(MailIcon, { className: 'w-6 h-6 text-purple-400 mr-3' }),
+                                    React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '招待メール送信')
+                                ),
+                                React.createElement('button', {
+                                    onClick: () => setShowInviteForm(!showInviteForm),
+                                    className: 'bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white transition-colors'
+                                }, showInviteForm ? '閉じる' : '招待を送信')
+                            ),
+                            
+                            showInviteForm && React.createElement('div', { className: 'space-y-4' },
+                                // メールアドレス入力
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-slate-300 mb-2' }, 'メールアドレス'),
+                                    React.createElement('input', {
+                                        type: 'email',
+                                        placeholder: 'example@email.com',
+                                        value: inviteEmail,
+                                        onChange: (e) => setInviteEmail(e.target.value),
+                                        className: 'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500'
+                                    })
+                                ),
+                                
+                                // グループ選択
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-slate-300 mb-2' }, 'グループ設定'),
+                                    React.createElement('div', { className: 'space-y-2' },
+                                        React.createElement('label', { className: 'flex items-center space-x-2 cursor-pointer' },
+                                            React.createElement('input', {
+                                                type: 'radio',
+                                                name: 'groupOption',
+                                                value: 'none',
+                                                checked: groupOption === 'none',
+                                                onChange: (e) => setGroupOption(e.target.value),
+                                                className: 'text-purple-600'
+                                            }),
+                                            React.createElement('span', { className: 'text-slate-300' }, 'グループ追加なし（アプリへの招待のみ）')
+                                        ),
+                                        familyGroup.name && React.createElement('label', { className: 'flex items-center space-x-2 cursor-pointer' },
+                                            React.createElement('input', {
+                                                type: 'radio',
+                                                name: 'groupOption',
+                                                value: 'current',
+                                                checked: groupOption === 'current',
+                                                onChange: (e) => setGroupOption(e.target.value),
+                                                className: 'text-purple-600'
+                                            }),
+                                            React.createElement('span', { className: 'text-slate-300' }, `現在のグループ「${familyGroup.name}」に招待`)
+                                        ),
+                                        React.createElement('label', { className: 'flex items-center space-x-2 cursor-pointer' },
+                                            React.createElement('input', {
+                                                type: 'radio',
+                                                name: 'groupOption',
+                                                value: 'new',
+                                                checked: groupOption === 'new',
+                                                onChange: (e) => setGroupOption(e.target.value),
+                                                className: 'text-purple-600'
+                                            }),
+                                            React.createElement('span', { className: 'text-slate-300' }, '新しいグループを作成して招待')
+                                        )
+                                    )
+                                ),
+                                
+                                // 新しいグループ名入力（新規グループ選択時のみ表示）
+                                groupOption === 'new' && React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium text-slate-300 mb-2' }, '新しいグループ名'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        placeholder: 'グループ名を入力',
+                                        value: newInviteGroupName,
+                                        onChange: (e) => setNewInviteGroupName(e.target.value),
+                                        className: 'w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500'
+                                    })
+                                ),
+                                
+                                // 送信ボタン
+                                React.createElement('button', {
+                                    onClick: sendInvitation,
+                                    disabled: inviteLoading || !inviteEmail.trim() || (groupOption === 'new' && !newInviteGroupName.trim()),
+                                    className: 'w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:cursor-not-allowed px-4 py-2 rounded-lg text-white transition-colors'
+                                }, inviteLoading ? '送信中...' : '招待メールを送信')
+                            )
+                        ),
+
+                        // 送信済み招待一覧
+                        pendingInvitations.length > 0 && React.createElement('div', { className: 'bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 mb-6 border border-slate-700/30' },
+                            React.createElement('div', { className: 'flex items-center mb-4' },
+                                React.createElement(MailIcon, { className: 'w-6 h-6 text-yellow-400 mr-3' }),
+                                React.createElement('h3', { className: 'text-lg font-semibold text-white' }, '送信済み招待'),
+                                React.createElement('span', { className: 'ml-2 bg-yellow-600 text-white px-2 py-1 rounded-full text-sm' }, pendingInvitations.length)
+                            ),
+                            React.createElement('div', { className: 'space-y-3' },
+                                pendingInvitations.map(invitation =>
+                                    React.createElement('div', { 
+                                        key: invitation.id, 
+                                        className: 'flex items-center justify-between bg-slate-900/50 rounded-lg p-4' 
+                                    },
+                                        React.createElement('div', null,
+                                            React.createElement('h4', { className: 'font-medium text-white' }, invitation.email),
+                                            React.createElement('p', { className: 'text-sm text-slate-300' }, `${invitation.family_group_name}グループ`),
+                                            React.createElement('p', { className: 'text-xs text-slate-400' }, `送信: ${invitation.created_at} | 期限: ${invitation.expires_at}`)
+                                        ),
+                                        React.createElement('div', { className: 'flex items-center space-x-2' },
+                                            invitation.is_used ? 
+                                                React.createElement('span', { className: 'bg-green-600 text-white px-2 py-1 rounded text-sm' }, '使用済み') :
+                                                invitation.is_expired ?
+                                                    React.createElement('span', { className: 'bg-red-600 text-white px-2 py-1 rounded text-sm' }, '期限切れ') :
+                                                    React.createElement('span', { className: 'bg-blue-600 text-white px-2 py-1 rounded text-sm' }, '有効')
+                                        )
+                                    )
                                 )
                             )
                         ),

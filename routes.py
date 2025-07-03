@@ -7,8 +7,9 @@ import requests
 import json
 from openai import OpenAI
 from app import app, db
-from models import User, FamilyGroup
+from models import User, FamilyGroup, FamilyInvitation
 from demo_data import get_demo_data, get_demo_family_stats
+from email_service import email_service
 
 # OpenAI client initialization
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -596,7 +597,32 @@ def login():
         if user and user.check_password(password):
             session['user_id'] = user.id
             session['username'] = user.username
-            flash(f'{user.username}さん、おかえりなさい！', 'success')
+            
+            # 招待承認処理
+            invitation_token = session.get('invitation_token')
+            if invitation_token:
+                invitation = FamilyInvitation.query.filter_by(token=invitation_token).first()
+                if invitation and invitation.is_valid() and invitation.email == user.email:
+                    try:
+                        user.group_id = invitation.family_group_id
+                        invitation.mark_as_used()
+                        db.session.commit()
+                        
+                        # セッションから招待情報を削除
+                        session.pop('invitation_token', None)
+                        session.pop('invitation_email', None)
+                        session.pop('invitation_group_name', None)
+                        
+                        flash(f'{user.username}さん、おかえりなさい！「{invitation.family_group.name}」グループに参加しました。', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        app.logger.error(f'Error accepting invitation on login: {e}')
+                        flash(f'{user.username}さん、おかえりなさい！', 'success')
+                else:
+                    flash(f'{user.username}さん、おかえりなさい！', 'success')
+            else:
+                flash(f'{user.username}さん、おかえりなさい！', 'success')
+            
             return redirect(url_for('index'))
         else:
             flash('ユーザー名またはパスワードが間違っています。', 'error')
@@ -672,6 +698,35 @@ def register():
             user.email = email
             user.set_password(password)
             
+            # 招待承認処理
+            invitation_token = session.get('invitation_token')
+            invitation_group_name = session.get('invitation_group_name')
+            
+            if invitation_token:
+                invitation = FamilyInvitation.query.filter_by(token=invitation_token).first()
+                if invitation and invitation.is_valid() and invitation.email == email:
+                    # 招待からの登録
+                    user.group_id = invitation.family_group_id
+                    db.session.add(user)
+                    db.session.flush()
+                    
+                    # 招待を使用済みにマーク
+                    invitation.mark_as_used()
+                    
+                    # セッションから招待情報を削除
+                    session.pop('invitation_token', None)
+                    session.pop('invitation_email', None)
+                    session.pop('invitation_group_name', None)
+                    
+                    db.session.commit()
+                    
+                    # ウェルカムメールを送信
+                    email_service.send_welcome_email(user.email, user.username, invitation.family_group.name)
+                    
+                    flash(f'登録が完了しました。ファミリーグループ「{invitation.family_group.name}」に参加しました。', 'success')
+                    return redirect(url_for('login'))
+            
+            # 通常の登録処理
             if family_group:
                 user.group_id = family_group.id
 
@@ -683,13 +738,18 @@ def register():
 
             db.session.commit()
             
+            # ウェルカムメールを送信
+            group_name_for_email = None
             if group_action == 'create' and family_group:
+                group_name_for_email = family_group.name
                 flash(f'登録が完了しました。ファミリーグループ「{group_name}」を作成しました。招待コード: {family_group.invite_code}', 'success')
             elif group_action == 'join' and family_group:
+                group_name_for_email = family_group.name
                 flash(f'登録が完了しました。ファミリーグループ「{family_group.name}」に参加しました。', 'success')
             else:
                 flash('登録が完了しました。ログインしてください。', 'success')
-                
+            
+            email_service.send_welcome_email(user.email, user.username, group_name_for_email)
             return redirect(url_for('login'))
             
         except Exception as e:
@@ -1491,5 +1551,201 @@ def family_management():
                          user=user, 
                          family_group=family_group,
                          pending_invitations=pending_invitations)
+
+# 招待メール機能
+@app.route('/send-invitation', methods=['POST'])
+def send_invitation():
+    """家族グループ招待メールを送信"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'ログインが必要です'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'success': False, 'message': 'ユーザーが見つかりません'}), 404
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'リクエストデータが無効です'}), 400
+    
+    email = data.get('email', '').strip()
+    group_option = data.get('group_option', 'none')  # 'none', 'current', 'new'
+    new_group_name = data.get('new_group_name', '').strip()
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'メールアドレスが必要です'}), 400
+    
+    # メールアドレス重複チェック
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'message': 'このメールアドレスは既に登録されています'}), 400
+    
+    try:
+        family_group = None
+        
+        if group_option == 'current':
+            # 現在のグループに招待
+            if not user.family_group:
+                return jsonify({'success': False, 'message': '現在家族グループに参加していません'}), 400
+            family_group = user.family_group
+            
+        elif group_option == 'new':
+            # 新しいグループを作成
+            if not new_group_name:
+                return jsonify({'success': False, 'message': '新しいグループ名が必要です'}), 400
+            
+            family_group = FamilyGroup(name=new_group_name, created_by=user.id)
+            db.session.add(family_group)
+            db.session.flush()  # IDを取得するためにflush
+            
+            # 招待者を新しいグループに追加
+            user.group_id = family_group.id
+            
+        elif group_option == 'none':
+            # グループ追加なし - 単純な招待メール
+            # この場合は招待レコードを作成せずにウェルカムメールを送信
+            success = email_service.send_welcome_email(email, "新しいユーザー")
+            if success:
+                return jsonify({'success': True, 'message': '招待メールを送信しました'})
+            else:
+                return jsonify({'success': False, 'message': 'メール送信に失敗しました'}), 500
+        
+        if family_group:
+            # 既存の招待をチェック
+            existing_invitation = FamilyInvitation.query.filter_by(
+                email=email, 
+                family_group_id=family_group.id
+            ).filter(
+                FamilyInvitation.used_at.is_(None),
+                FamilyInvitation.expires_at > datetime.utcnow()
+            ).first()
+            
+            if existing_invitation:
+                return jsonify({'success': False, 'message': 'このメールアドレスには既に有効な招待が送信されています'}), 400
+            
+            # 新しい招待を作成
+            invitation = FamilyInvitation(
+                email=email,
+                family_group_id=family_group.id,
+                invited_by=user.id
+            )
+            db.session.add(invitation)
+            db.session.commit()
+            
+            # 招待メールを送信
+            success = email_service.send_family_invitation(invitation, user.username)
+            
+            if success:
+                return jsonify({'success': True, 'message': '招待メールを送信しました'})
+            else:
+                # メール送信失敗時は招待レコードを削除
+                db.session.delete(invitation)
+                db.session.commit()
+                return jsonify({'success': False, 'message': 'メール送信に失敗しました'}), 500
+        
+        return jsonify({'success': False, 'message': '不明なエラーが発生しました'}), 500
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error sending invitation: {e}')
+        return jsonify({'success': False, 'message': '招待送信中にエラーが発生しました'}), 500
+
+@app.route('/join-invitation/<token>')
+def join_invitation(token):
+    """招待リンクからの参加処理"""
+    invitation = FamilyInvitation.query.filter_by(token=token).first()
+    
+    if not invitation:
+        flash('招待リンクが無効です。', 'danger')
+        return redirect(url_for('register'))
+    
+    if not invitation.is_valid():
+        if invitation.is_expired():
+            flash('招待リンクの有効期限が切れています。', 'warning')
+        else:
+            flash('この招待リンクは既に使用されています。', 'info')
+        return redirect(url_for('register'))
+    
+    # セッションに招待情報を保存
+    session['invitation_token'] = token
+    session['invitation_email'] = invitation.email
+    session['invitation_group_name'] = invitation.family_group.name
+    
+    # 既存ユーザーの場合はログインページに、新規ユーザーの場合は登録ページに
+    existing_user = User.query.filter_by(email=invitation.email).first()
+    if existing_user:
+        flash(f'「{invitation.family_group.name}」グループへの招待を受け取りました。ログインして参加してください。', 'info')
+        return redirect(url_for('login'))
+    else:
+        flash(f'「{invitation.family_group.name}」グループへの招待を受け取りました。アカウントを作成して参加してください。', 'info')
+        return redirect(url_for('register'))
+
+@app.route('/accept-invitation', methods=['POST'])
+def accept_invitation():
+    """招待を承認してグループに参加"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'ログインが必要です'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'success': False, 'message': 'ユーザーが見つかりません'}), 404
+    
+    token = session.get('invitation_token')
+    if not token:
+        return jsonify({'success': False, 'message': '招待情報が見つかりません'}), 400
+    
+    invitation = FamilyInvitation.query.filter_by(token=token).first()
+    if not invitation or not invitation.is_valid():
+        return jsonify({'success': False, 'message': '招待が無効です'}), 400
+    
+    # メールアドレスの一致確認
+    if invitation.email != user.email:
+        return jsonify({'success': False, 'message': '招待されたメールアドレスと一致しません'}), 400
+    
+    try:
+        # ユーザーをグループに追加
+        user.group_id = invitation.family_group_id
+        
+        # 招待を使用済みにマーク
+        invitation.mark_as_used()
+        
+        db.session.commit()
+        
+        # セッションから招待情報を削除
+        session.pop('invitation_token', None)
+        session.pop('invitation_email', None)
+        session.pop('invitation_group_name', None)
+        
+        return jsonify({'success': True, 'message': f'「{invitation.family_group.name}」グループに参加しました'})
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error accepting invitation: {e}')
+        return jsonify({'success': False, 'message': 'グループ参加中にエラーが発生しました'}), 500
+
+@app.route('/api/invitations/pending')
+def api_pending_invitations():
+    """現在のユーザーの送信済み招待一覧を取得"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    invitations = FamilyInvitation.query.filter_by(invited_by=user.id).order_by(FamilyInvitation.created_at.desc()).all()
+    
+    invitation_list = []
+    for invitation in invitations:
+        invitation_list.append({
+            'id': invitation.id,
+            'email': invitation.email,
+            'family_group_name': invitation.family_group.name,
+            'created_at': invitation.created_at.strftime('%Y-%m-%d %H:%M'),
+            'expires_at': invitation.expires_at.strftime('%Y-%m-%d %H:%M'),
+            'is_used': invitation.is_used(),
+            'is_expired': invitation.is_expired(),
+            'is_valid': invitation.is_valid()
+        })
+    
+    return jsonify({'invitations': invitation_list})
 
 

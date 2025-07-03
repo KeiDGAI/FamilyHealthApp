@@ -1,6 +1,6 @@
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 import secrets
 import string
 
@@ -121,3 +121,50 @@ class FitbitData(db.Model):
     
     def __repr__(self):
         return f'<FitbitData {self.user.username} {self.date}>'
+
+class FamilyInvitation(db.Model):
+    """家族グループ招待モデル - メール招待を管理"""
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    family_group_id = db.Column(db.Integer, db.ForeignKey('family_group.id'), nullable=False)
+    invited_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(64), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used_at = db.Column(db.DateTime, nullable=True)  # 使用済みの場合に記録
+    
+    # Relationships
+    family_group = db.relationship('FamilyGroup', backref=db.backref('invitations', lazy=True))
+    inviter = db.relationship('User', backref=db.backref('sent_invitations', lazy=True))
+    
+    def __init__(self, **kwargs):
+        super(FamilyInvitation, self).__init__(**kwargs)
+        if not self.token:
+            self.token = self.generate_token()
+        if not self.expires_at:
+            # 7日間の有効期限
+            self.expires_at = datetime.utcnow() + timedelta(days=7)
+    
+    @staticmethod
+    def generate_token():
+        """招待トークンを生成（64文字のランダム文字列）"""
+        return secrets.token_urlsafe(48)  # 64文字のURL安全な文字列
+    
+    def is_expired(self):
+        """招待が期限切れかどうかをチェック"""
+        return datetime.utcnow() > self.expires_at
+    
+    def is_used(self):
+        """招待が使用済みかどうかをチェック"""
+        return self.used_at is not None
+    
+    def is_valid(self):
+        """招待が有効かどうかをチェック"""
+        return not self.is_expired() and not self.is_used()
+    
+    def mark_as_used(self):
+        """招待を使用済みとしてマーク"""
+        self.used_at = datetime.utcnow()
+    
+    def __repr__(self):
+        return f'<FamilyInvitation {self.email} -> {self.family_group.name}>'

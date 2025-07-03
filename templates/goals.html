@@ -63,138 +63,249 @@
                     </div>
                 </div>
 
-                <!-- 健康指標目標 -->
+                <!-- 目標プリセット -->
                 <div class="col-lg-6 mb-4">
                     <div class="card bg-dark">
                         <div class="card-header bg-success">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-heartbeat me-2"></i>健康指標目標
+                                <i class="fas fa-magic me-2"></i>目標プリセット
                             </h5>
                         </div>
                         <div class="card-body">
-                            <form id="healthGoalsForm">
-                                <div class="mb-3">
-                                    <label for="restingHeartRate" class="form-label">安静時心拍数目標範囲</label>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <div class="input-group">
-                                                <input type="number" class="form-control" id="heartRateMin" value="60" min="40" max="100">
-                                                <span class="input-group-text">BPM</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-6">
-                                            <div class="input-group">
-                                                <input type="number" class="form-control" id="heartRateMax" value="80" min="60" max="120">
-                                                <span class="input-group-text">BPM</span>
-                                            </div>
-                                        </div>
+                            <p class="text-muted mb-3">お好みのレベルを選択して、目標を簡単に設定できます</p>
+                            
+                            <!-- イージー -->
+                            <div class="preset-option mb-3 p-3 border rounded cursor-pointer" onclick="setPreset('easy')">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 text-success">🟢 イージー</h6>
+                                        <small class="text-muted">運動を始めたい方向け</small>
                                     </div>
-                                    <div class="form-text">健康な範囲: 60-80 BPM</div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="sleepGoal" class="form-label">睡眠時間目標</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="sleepGoal" value="7.5" min="6" max="10" step="0.5">
-                                        <span class="input-group-text">時間</span>
+                                    <div class="text-end">
+                                        <div class="small">4,000歩・100kcal・10分</div>
                                     </div>
-                                    <div class="form-text">推奨: 7-9時間</div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="waterGoal" class="form-label">1日の水分摂取目標</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" id="waterGoal" value="2000" min="1000" max="4000" step="250">
-                                        <span class="input-group-text">ml</span>
-                                    </div>
-                                    <div class="form-text">推奨: 2,000-3,000ml</div>
-                                </div>
-
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-save me-2"></i>健康目標を保存
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 週間チャレンジ -->
-                <div class="col-lg-6 mb-4">
-                    <div class="card bg-dark">
-                        <div class="card-header bg-warning">
-                            <h5 class="card-title mb-0 text-dark">
-                                <i class="fas fa-trophy me-2"></i>週間チャレンジ
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <h6 class="text-warning">今週のチャレンジを選択:</h6>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="weeklyChallenge" id="challenge1" value="steps">
-                                    <label class="form-check-label" for="challenge1">
-                                        <strong>ステップマスター:</strong> 毎日10,000歩を達成
-                                    </label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="weeklyChallenge" id="challenge2" value="calories">
-                                    <label class="form-check-label" for="challenge2">
-                                        <strong>カロリーバーナー:</strong> 週15,000kcal消費
-                                    </label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="weeklyChallenge" id="challenge3" value="consistency">
-                                    <label class="form-check-label" for="challenge3">
-                                        <strong>コンシステンシー:</strong> 7日連続で基本目標達成
-                                    </label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="weeklyChallenge" id="challenge4" value="family">
-                                    <label class="form-check-label" for="challenge4">
-                                        <strong>ファミリーパワー:</strong> 家族全員での目標達成
-                                    </label>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-warning text-dark" onclick="saveWeeklyChallenge()">
-                                <i class="fas fa-star me-2"></i>チャレンジを開始
+                            
+                            <!-- ノーマル -->
+                            <div class="preset-option mb-3 p-3 border rounded cursor-pointer" onclick="setPreset('normal')">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 text-warning">🟡 ノーマル</h6>
+                                        <small class="text-muted">標準的な健康維持</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small">7,000歩・200kcal・30分</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- ハード -->
+                            <div class="preset-option mb-3 p-3 border rounded cursor-pointer" onclick="setPreset('hard')">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 text-danger">🔴 ハード</h6>
+                                        <small class="text-muted">本格的な運動習慣</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small">10,000歩・300kcal・60分</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" class="btn btn-success w-100" onclick="applyPreset()">
+                                <i class="fas fa-check me-2"></i>選択したプリセットを適用
                             </button>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 目標達成のヒント -->
-                <div class="col-lg-6 mb-4">
+            <!-- 現在の目標表示 -->
+            <div class="row">
+                <div class="col-12">
                     <div class="card bg-dark">
                         <div class="card-header bg-info">
                             <h5 class="card-title mb-0">
-                                <i class="fas fa-lightbulb me-2"></i>目標達成のヒント
+                                <i class="fas fa-chart-line me-2"></i>現在の目標
                             </h5>
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading">効果的な目標設定のコツ:</h6>
-                                <ul class="mb-0">
-                                    <li><strong>現実的な目標:</strong> 現在の活動レベルから20%増を目指す</li>
-                                    <li><strong>段階的な向上:</strong> 週ごとに少しずつ目標を上げる</li>
-                                    <li><strong>家族との共有:</strong> お互いの目標を知り、応援し合う</li>
-                                    <li><strong>記録の習慣:</strong> 毎日の進捗を確認する</li>
-                                </ul>
-                            </div>
-
-                            <div class="mt-3">
-                                <h6>推奨アクション:</h6>
-                                <div class="d-grid gap-2">
-                                    <a href="{{ url_for('goal_achievements') }}" class="btn btn-outline-info btn-sm">
-                                        <i class="fas fa-chart-bar me-2"></i>現在の達成状況を確認
-                                    </a>
-                                    <a href="{{ url_for('family_challenges') }}" class="btn btn-outline-info btn-sm">
-                                        <i class="fas fa-users me-2"></i>家族チャレンジに参加
-                                    </a>
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded">
+                                        <i class="fas fa-walking text-primary fa-2x mb-2"></i>
+                                        <h4 class="text-white" id="currentStepGoal">10,000</h4>
+                                        <small class="text-muted">歩/日</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded">
+                                        <i class="fas fa-fire text-danger fa-2x mb-2"></i>
+                                        <h4 class="text-white" id="currentCalorieGoal">2,000</h4>
+                                        <small class="text-muted">kcal/日</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-3 border rounded">
+                                        <i class="fas fa-stopwatch text-warning fa-2x mb-2"></i>
+                                        <h4 class="text-white" id="currentExerciseGoal">150</h4>
+                                        <small class="text-muted">分/週</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedPreset = null;
+
+// プリセットの設定値
+const presets = {
+    easy: {
+        steps: 4000,
+        calories: 100,
+        exercise: 10 * 7  // 10分×7日
+    },
+    normal: {
+        steps: 7000,
+        calories: 200,
+        exercise: 30 * 7  // 30分×7日
+    },
+    hard: {
+        steps: 10000,
+        calories: 300,
+        exercise: 60 * 7  // 60分×7日
+    }
+};
+
+// プリセット選択
+function setPreset(level) {
+    selectedPreset = level;
+    
+    // 全てのプリセットオプションから選択状態を削除
+    document.querySelectorAll('.preset-option').forEach(option => {
+        option.classList.remove('border-success', 'bg-success', 'bg-opacity-10');
+    });
+    
+    // 選択されたプリセットを強調表示
+    event.target.closest('.preset-option').classList.add('border-success', 'bg-success', 'bg-opacity-10');
+}
+
+// プリセットを適用
+function applyPreset() {
+    if (!selectedPreset) {
+        alert('プリセットを選択してください');
+        return;
+    }
+    
+    const preset = presets[selectedPreset];
+    
+    // フォームの値を更新
+    document.getElementById('stepGoal').value = preset.steps;
+    document.getElementById('calorieGoal').value = preset.calories;
+    document.getElementById('exerciseGoal').value = preset.exercise;
+    
+    // 現在の目標表示を更新
+    document.getElementById('currentStepGoal').textContent = preset.steps.toLocaleString();
+    document.getElementById('currentCalorieGoal').textContent = preset.calories.toLocaleString();
+    document.getElementById('currentExerciseGoal').textContent = preset.exercise;
+    
+    // ローカルストレージに保存
+    const goalData = {
+        steps: preset.steps,
+        calories: preset.calories,
+        exercise: preset.exercise,
+        preset: selectedPreset,
+        updatedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('healthGoals', JSON.stringify(goalData));
+    
+    alert(`${selectedPreset.toUpperCase()}プリセットを適用しました！`);
+}
+
+// 基本目標フォームの保存
+document.getElementById('basicGoalsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const steps = parseInt(document.getElementById('stepGoal').value);
+    const calories = parseInt(document.getElementById('calorieGoal').value);
+    const exercise = parseInt(document.getElementById('exerciseGoal').value);
+    
+    const goalData = {
+        steps: steps,
+        calories: calories,
+        exercise: exercise,
+        preset: 'custom',
+        updatedAt: new Date().toISOString()
+    };
+    
+    localStorage.setItem('healthGoals', JSON.stringify(goalData));
+    
+    // 現在の目標表示を更新
+    document.getElementById('currentStepGoal').textContent = steps.toLocaleString();
+    document.getElementById('currentCalorieGoal').textContent = calories.toLocaleString();
+    document.getElementById('currentExerciseGoal').textContent = exercise;
+    
+    alert('目標を保存しました！');
+});
+
+// ページ読み込み時に保存された目標を読み込み
+document.addEventListener('DOMContentLoaded', function() {
+    const savedGoals = localStorage.getItem('healthGoals');
+    if (savedGoals) {
+        const goalData = JSON.parse(savedGoals);
+        
+        // フォームの値を設定
+        document.getElementById('stepGoal').value = goalData.steps;
+        document.getElementById('calorieGoal').value = goalData.calories;
+        document.getElementById('exerciseGoal').value = goalData.exercise;
+        
+        // 現在の目標表示を更新
+        document.getElementById('currentStepGoal').textContent = goalData.steps.toLocaleString();
+        document.getElementById('currentCalorieGoal').textContent = goalData.calories.toLocaleString();
+        document.getElementById('currentExerciseGoal').textContent = goalData.exercise;
+    }
+});
+
+// プリセットオプションのホバー効果
+document.querySelectorAll('.preset-option').forEach(option => {
+    option.addEventListener('mouseenter', function() {
+        if (!this.classList.contains('border-success')) {
+            this.classList.add('border-light');
+        }
+    });
+    
+    option.addEventListener('mouseleave', function() {
+        if (!this.classList.contains('border-success')) {
+            this.classList.remove('border-light');
+        }
+    });
+});
+</script>
+
+<style>
+.preset-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.preset-option:hover {
+    transform: translateY(-2px);
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+</style>
+
+{% endblock %}
 
             <!-- 目標プリセット -->
             <div class="card bg-dark mb-4">
