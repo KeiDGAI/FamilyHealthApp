@@ -122,4 +122,13 @@
 
     // グローバルスコープに追加
     window.UnifiedNavigation = UnifiedNavigation;
+    
+    // 統一ナビゲーション初期化関数
+    window.initUnifiedNavigation = function(currentPage = '') {
+        const navElement = document.getElementById('unified-navigation');
+        if (navElement) {
+            const root = ReactDOM.createRoot(navElement);
+            root.render(React.createElement(UnifiedNavigation, { currentPage }));
+        }
+    };
 </script>
