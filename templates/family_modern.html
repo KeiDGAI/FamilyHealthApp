@@ -115,15 +115,15 @@
                             }, '家族'),
                             React.createElement('a', { 
                                 href: '/goals', 
-                                className: currentPage === 'goals' ? 'text-blue-400 hover:text-blue-300 transition-colors font-medium' : 'text-blue-400 hover:text-blue-300 transition-colors'
+                                className: getPageClass('goals')
                             }, '目標設定'),
                             React.createElement('a', { 
                                 href: '/fitbit-setup', 
-                                className: currentPage === 'fitbit' ? 'text-green-400 hover:text-green-300 transition-colors font-medium' : 'text-green-400 hover:text-green-300 transition-colors'
+                                className: getPageClass('fitbit')
                             }, 'Fitbit連携'),
                             React.createElement('a', { 
                                 href: '/family-management', 
-                                className: currentPage === 'management' ? 'text-purple-400 hover:text-purple-300 transition-colors font-medium' : 'text-purple-400 hover:text-purple-300 transition-colors'
+                                className: getPageClass('management')
                             }, '家族管理'),
                             React.createElement('a', { 
                                 href: '/profile', 
@@ -165,15 +165,15 @@
                         }, '家族'),
                         React.createElement('a', { 
                             href: '/goals', 
-                            className: 'text-blue-400 hover:text-blue-300 transition-colors py-2' 
+                            className: getPageClass('goals') + ' py-2'
                         }, '目標設定'),
                         React.createElement('a', { 
                             href: '/fitbit-setup', 
-                            className: 'text-green-400 hover:text-green-300 transition-colors py-2' 
+                            className: getPageClass('fitbit') + ' py-2'
                         }, 'Fitbit連携'),
                         React.createElement('a', { 
                             href: '/family-management', 
-                            className: 'text-purple-400 hover:text-purple-300 transition-colors py-2' 
+                            className: getPageClass('management') + ' py-2'
                         }, '家族管理'),
                         React.createElement('a', { 
                             href: '/profile', 
