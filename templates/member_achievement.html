@@ -144,10 +144,10 @@
                                 <span>{current.toLocaleString()}{unit} / {goal.toLocaleString()}{unit}</span>
                             </div>
                             <div className="w-full bg-slate-700 rounded-full h-2">
-                                React.createElement('div', {
-                                    className: "bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300",
-                                    style: { width: progress + '%' }
-                                })
+                                <div 
+                                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: progress + '%' }}
+                                />
                             </div>
                         </div>
 
@@ -157,10 +157,10 @@
                                 <span>{achievementRate}%</span>
                             </div>
                             <div className="w-full bg-slate-700 rounded-full h-2">
-                                React.createElement('div', {
-                                    className: "bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full transition-all duration-300",
-                                    style: { width: achievementRate + '%' }
-                                })
+                                <div 
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ width: achievementRate + '%' }}
+                                />
                             </div>
                         </div>
 
