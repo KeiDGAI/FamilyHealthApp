@@ -75,12 +75,12 @@
             useEffect(() => {
                 // デモデータを生成
                 const generateMemberData = () => {
-                    const memberName = "{{ member.name }}";
+                    const memberName = `{{ member.name }}`;
                     const days = ['6日前', '5日前', '4日前', '3日前', '2日前', '昨日', '今日'];
                     
                     return {
                         name: memberName,
-                        avatar: "{{ member.avatar }}",
+                        avatar: `{{ member.avatar }}`,
                         goals: {
                             steps: 10000,
                             calories: 2000,
@@ -146,7 +146,7 @@
                             <div className="w-full bg-slate-700 rounded-full h-2">
                                 <div 
                                     className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: progress + '%' }}
+                                    ref={(el) => { if (el) el.style.width = progress + '%'; }}
                                 />
                             </div>
                         </div>
@@ -159,7 +159,7 @@
                             <div className="w-full bg-slate-700 rounded-full h-2">
                                 <div 
                                     className="bg-gradient-to-r from-green-500 to-emerald-600 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: achievementRate + '%' }}
+                                    ref={(el) => { if (el) el.style.width = achievementRate + '%'; }}
                                 />
                             </div>
                         </div>
