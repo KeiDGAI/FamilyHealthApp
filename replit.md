@@ -104,6 +104,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **July 4, 2025**: ナビゲーション視認性改善・全ページ統一完了
+  - 現在ページハイライト統一：白文字+青背景+角丸で明確な識別性
+  - 全6ページのgetPageClass関数を統一：modern_dashboard.html・family_modern.html・profile_modern.html・components/navigation.html
+  - member_achievement.htmlのJSX構文エラー修正：Jinjaテンプレートとの競合解決
+  - 色分けメニュー削除：青・緑・紫の個別色からグレー統一表示に変更
+  - デスクトップ・モバイル両方で一貫したナビゲーション体験
 - **July 3, 2025**: 全ページナビゲーション統一完了
   - 目標設定ページ（/goals）のナビゲーション修正：base.htmlからReact統一ナビゲーションに変更
   - ホーム画面のデスクトップメニューに「目標設定」リンク追加：家族とFitbit連携の間に配置
